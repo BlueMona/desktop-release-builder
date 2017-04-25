@@ -14,9 +14,9 @@ Installation
 * Install Homebrew - https://brew.sh/
 * In Terminal:
 
-	brew install wine --without-x11
-	brew install mono
-	brew install gnu-tar graphicsmagick xz
+      brew install wine --without-x11
+      brew install mono
+      brew install gnu-tar graphicsmagick xz
 
 * Install Parallels with Windows 10.
 * In Parallels, create a shared folder between Mac and Windows, for example,
@@ -45,7 +45,7 @@ Creating a release
 1. Launch Windows, open "Node.js command prompt".
 2. Go to the builder directory, type:
 
-	node index Y:\ "certificate name"
+	   node index Y:\ "certificate name"
 
    (Assuming Y: is a disk mapping a shared folder from Mac to Windows,
    "certificate name" is the name of certificate to use -- either
@@ -57,14 +57,14 @@ Creating a release
 
 3. On a Mac, in Terminal go to the builder directory, type:
 
-	node index ~/Shared PeerioTechnologies/peerio-desktop v0.0.0
+	   node index ~/Shared PeerioTechnologies/peerio-desktop v0.0.0
 
 
    Replace v0.0.0 with the actual tag for the version.
    If the tag is not given, releases tag with the greatest version
    (according to semver)
 
-   (Assuming ~/Shared is a shared folder between Mac and Windows)
+   (Assuming `~/Shared` is a shared folder between Mac and Windows)
 
 4. Wait for the project to build, check Windows for
    USB token password input. Enter password.
