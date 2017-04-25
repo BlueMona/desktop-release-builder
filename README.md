@@ -22,6 +22,9 @@ Installation
 * In Parallels, create a shared folder between Mac and Windows, for example,
   ~/Shared/ (and probably disable all other shared folders for security).
   VM Options > Sharing > Custom folders.
+* Download this repository, open Terminal, change directory to downloaded
+  repository and type: `npm install`.
+
 
 ### Windows (in Paralllels)
 
@@ -29,6 +32,7 @@ Installation
 * Install node (latest, not LTS) - https://nodejs.org
 * Install Windows SDK - https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
 * XXX: install whatever drivers are needed for USB token.
+* Download this repository.
 
 
 Dev notes
