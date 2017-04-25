@@ -1,7 +1,7 @@
 Desktop release builder
 =======================
 
-Makes releases of Peerio Desktop: downloads the ZIP of a tag of the specified repository from GitHub, Compiles the project and runs electron-builder to build and sign Windows, Mac and Linux binaries and installers, and publishes to a draft GitHub release.
+Makes releases of Peerio Desktop: downloads a ZIP of the given tag of the specified repository from GitHub, compiles the project, runs electron-builder to build and sign Windows, Mac, and Linux binaries and installers, and uploads them into a draft GitHub release.
 
 Building is performed on macOS. Signing of Windows executables is delegated to a service running in a Windows VM in Parallels via a shared folder.
 
@@ -61,8 +61,7 @@ Creating a release
 
 
    Replace v0.0.0 with the actual tag for the version.
-   If the tag is not given, releases tag with the greatest version
-   (according to semver)
+   If the tag is not given, fetches the greatest version (according to semver).
 
    (Assuming `~/Shared` is a shared folder between Mac and Windows)
 
