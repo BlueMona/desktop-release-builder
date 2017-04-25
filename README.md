@@ -57,8 +57,10 @@ Creating a release
 
 3. On a Mac, in Terminal go to the builder directory, type:
 
-	   node index ~/Shared PeerioTechnologies/peerio-desktop v0.0.0
+       export GH_TOKEN=0000000000000000000000000000000000000000
+       node index ~/Shared PeerioTechnologies/peerio-desktop v0.0.0
 
+   `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 
    Replace v0.0.0 with the actual tag for the version.
    If the tag is not given, fetches the greatest version (according to semver).
