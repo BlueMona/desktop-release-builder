@@ -1,5 +1,5 @@
 {
-  "name": "release-maker",
+  "name": "desktop-release-builder",
   "version": "1.0.0",
   "description": "Makes signed Peerio Desktop releases",
   "main": "index.js",

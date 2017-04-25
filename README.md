@@ -1,5 +1,5 @@
-release-maker
-=============
+Desktop release builder
+=======================
 
 Makes releases of Peerio Desktop: downloads the ZIP of a tag of the specified repository from GitHub, Compiles the project and runs electron-builder to build and sign Windows, Mac and Linux binaries and installers, and publishes to a draft GitHub release.
 
