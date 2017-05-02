@@ -77,3 +77,11 @@ Creating a release
 5. Wait for the project to create a draft release and upload files.
 
 6. Edit the release draft on GitHub and publish it.
+
+
+If something goes wrong
+-----------------------
+
+If publishing fails to complete (e.g. when connection is interrupted during
+upload), go to GitHub releases for the project, and delete the draft release.
+Then repeat the release process.
