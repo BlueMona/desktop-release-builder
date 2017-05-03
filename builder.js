@@ -16,8 +16,8 @@ const semver = require('semver-extra');
 const rimraf = require('rimraf');
 const download = require('download');
 const program = require('commander');
-
-const { makeTempDir, criticalError } = require('./helpers');
+const { makeTempDir, criticalError, execp } = require('./helpers');
+const { override } = require('./override');
 
 if (process.platform !== 'darwin') {
     console.error('Run this program on macOS (for macOS, Windows, Linux builder)');
@@ -30,6 +30,7 @@ program
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
     .option('-p --publish', 'Publish release')
+    .option('-o --overrides <repo>', 'Repository with overrides')
     .parse(process.argv);
 
 if (!program.shared || !program.repository) {
@@ -74,6 +75,7 @@ main();
 
 async function main() {
     let sourceTempDir;
+    let overridesDir;
 
     try {
         if (!GITHUB_TAG) {
@@ -86,13 +88,18 @@ async function main() {
         console.log(`Downloading release ${GITHUB_TAG}...`);
         const projectDir = await downloadGitHubTag(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
 
+        if (program.overrides) {
+            // Apply overrides.
+            overridesDir = await applyOverrides(program.overrides, projectDir);
+        }
+
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir, GITHUB_TAG);
-
     } catch (ex) {
         criticalError(ex);
     } finally {
         if (sourceTempDir) rimraf.sync(sourceTempDir);
+        if (overridesDir) rimraf.sync(overridesDir);
     }
 }
 
@@ -211,4 +218,28 @@ function getLatestGithubTag(organization, project) {
     return fetchGithubTags(organization, project)
         .then(tags => tags.map(t => t.substring(1)))
         .then(versions => 'v' + semver.max(versions));
+}
+
+/**
+ * Applies overrides from overridesRepo to targerDir.
+ *
+ * @param overridesRepo {string} github repository ORGANIZATION/REPO
+ * @param targetDir {string} target directory with Peerio desktop sources
+ * @returns {string} temporary directory with cloned overrides repository
+ */
+async function applyOverrides(overridesRepo, targetDir) {
+    let tempDir;
+    try {
+        tempDir = await makeTempDir();
+        await execp(`git clone --depth=1 git@github.com:${overridesRepo}.git ${tempDir}`, tempDir);
+        await override(tempDir, targetDir);
+        if (program.publish) {
+            // Tag a new release in overrides repo and push the tag.
+            await execp(`git tag ${GITHUB_TAG}`, tempDir);
+            await execp(`git push --tags`, tempDir);
+        }
+    } catch (ex) {
+        if (tempDir) rimraf.sync(tempDir);
+        criticalError(ex);
+    }
 }

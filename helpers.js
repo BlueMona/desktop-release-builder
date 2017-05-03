@@ -3,6 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { exec } = require('child_process');
 
 // Enqueues a function returning a promise to be run after the currently
 // enqueued item finishes.
@@ -33,7 +34,6 @@ class Queue {
         this.tail = this.tail ? this.tail.then(fn) : fn();
     }
 }
-
 
 /**
  * Logs error and terminate the process.
@@ -125,9 +125,9 @@ function watchDir(dir, fireInitially, cb) {
                 // Schedule next check.
                 if (!cancelled) setTimeout(checkForChanges, 1000);
             })
-            .catch(err => {
-                console.log(`Error watching directory: ${err}`);
-            });
+                .catch(err => {
+                    console.log(`Error watching directory: ${err}`);
+                });
         });
     }
 
@@ -137,10 +137,33 @@ function watchDir(dir, fireInitially, cb) {
     };
 }
 
+/**
+ * Executes command, returns a promise resolving to stdout string,
+ * or rejects with error.
+ *
+ * @param {string} command
+ * @param {string} cwd working directory
+ * @param {boolean} log log output and errors (true by default)
+ */
+function execp(command, cwd, log = true) {
+    return new Promise((fulfill, reject) => {
+        exec(command, { cwd, env: process.env }, (err, stdout, stderr) => {
+            if (err) {
+                if (log) console.log(stderr);
+                reject(err);
+            } else {
+                if (log) console.log(stdout);
+                fulfill(stdout);
+            }
+        })
+    })
+}
+
 module.exports = {
     Queue,
     criticalError,
     moveFileToDir,
     makeTempDir,
-    watchDir
+    watchDir,
+    execp
 };

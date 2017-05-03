@@ -62,7 +62,10 @@ Creating a release
 3. On a Mac, in Terminal go to the builder directory, type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       node builder --shared ~/Shared --repository PeerioTechnologies/peerio-desktop --tag v0.0.0 --publish
+       node builder --shared ~/Shared \
+                    --repository PeerioTechnologies/peerio-desktop \
+                    --tag v0.0.0 \
+                    --publish
 
    `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 
@@ -77,6 +80,23 @@ Creating a release
 5. Wait for the project to create a draft release and upload files.
 
 6. Edit the release draft on GitHub and publish it.
+
+
+Applying overrides from other repositories
+------------------------------------------
+
+Pass `--override` option to builder with repository containing overrides:
+
+       export GH_TOKEN=0000000000000000000000000000000000000000
+       node builder --shared ~/Shared \
+                    --repository PeerioTechnologies/peerio-desktop \
+                    --overrides PeerioTechnologies/whitelabel
+                    --tag v0.0.0 \
+                    --publish
+
+If `--published` is passed, the overrides repository will be tagged with the
+new release. **Release will be published to the repository specified in
+`package.json`, so make sure overrides do override it.**
 
 
 If something goes wrong
