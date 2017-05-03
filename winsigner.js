@@ -4,15 +4,8 @@
  * Waits for a file to sign to appear in the shared folder, then signs this
  * file, and moves it into the output folder.
  *
- * Usage:
- *
- *  node winsigner.js SHARED_DIR [CERT_NAME]
- *
- * Note that SHARED_DIR/in must be kept empty when starting this service and
- * exclusively used for it — don't put anything else in it.
- *
- * If CERT_NAME ends with .pfx, it's considered a certificate file,
- * if not, it's a name of certificate from certs store.
+ * If the given certificate name ends with .pfx, it's considered a certificate
+ * file, if not, it's a name of certificate from certs store.
  */
 
 const fs = require('fs');

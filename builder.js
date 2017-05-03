@@ -6,13 +6,6 @@
  * products to sign into a shared folder.
  *
  * Must be run on macOS.
- *
- * Usage:
- *
- *  export GH_TOKEN=<...github auth token...>
- *  node builder.js SHARED_DIR ORG/REPO [TAG]
- *
- * If not tag is given, the greatest one (according to semver) is built.
  */
 
 const fs = require('fs');

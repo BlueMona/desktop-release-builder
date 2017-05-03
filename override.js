@@ -1,3 +1,7 @@
+/**
+ * Overrides JSON values and files.
+ */
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
