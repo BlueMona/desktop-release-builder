@@ -62,7 +62,7 @@ Creating a release
 3. On a Mac, in Terminal go to the builder directory, type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       node builder --shared ~/Shared --repository PeerioTechnologies/peerio-desktop --tag v0.0.0
+       node builder --shared ~/Shared --repository PeerioTechnologies/peerio-desktop --tag v0.0.0 --publish
 
    `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 

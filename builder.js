@@ -25,10 +25,11 @@ if (process.platform !== 'darwin') {
 }
 
 program
-    .usage('--shared <dir> --repository <repo> [--tag [name]]')
+    .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish]')
     .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
+    .option('-p --publish', 'Publish release')
     .parse(process.argv);
 
 if (!program.shared || !program.repository) {
@@ -136,10 +137,11 @@ function writeFile(file, data) {
 function buildRelease(dir, tag) {
     return new Promise((fulfill, reject) => {
         const buildFlags = tag.includes('-') ? '--prerelease' : '';
+        const publish = program.publish ? 'always' : 'never';
         let cmds = [
             'NODE_ENV=development npm install',
             'NODE_ENV=production npm run compile',
-            `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --mac --linux --publish always --draft ${buildFlags}`
+            `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --mac --linux --publish ${publish} --draft ${buildFlags}`
         ];
         const builder = spawn('sh', ['-c', cmds.join(' && ')], {
             cwd: dir,
