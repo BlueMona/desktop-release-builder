@@ -6,15 +6,21 @@ const { ncp } = require('ncp');
 
 if (require.main === module) {
     // Launched as an executable.
+    const program = require('commander');
 
-    // Check command-line arguments.
-    if (process.argv.length < 3) {
-        console.error('Usage: node override OVERRIDES_DIR DEST_DIR');
+    program
+        .usage('--overrides <dir> --target <dir>')
+        .option('-o --overrides <dir>', 'Directory with overrides')
+        .option('-t --target <dir>', 'Target directory (with a copy of Peerio Desktop sources to merge into)')
+        .parse(process.argv);
+
+    if (!program.overrides || !program.target) {
+        program.outputHelp();
         process.exit(1);
     }
 
-    const SRC_DIR = process.argv[2];
-    const DST_DIR = process.argv[3];
+    const SRC_DIR = program.overrides;
+    const DST_DIR = program.target;
 
     override(SRC_DIR, DST_DIR)
         .then(() => process.exit(0))

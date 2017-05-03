@@ -22,21 +22,33 @@ const { spawn } = require('child_process');
 const semver = require('semver-extra');
 const rimraf = require('rimraf');
 const download = require('download');
+const program = require('commander');
 
 const { makeTempDir, criticalError } = require('./helpers');
 
-// Check command-line arguments.
-if (process.argv.length < 4) {
-    console.error('Usage: node builder.js SHARED_DIR ORG/REPO [TAG]');
+if (process.platform !== 'darwin') {
+    console.error('Run this program on macOS (for macOS, Windows, Linux builder)');
+    process.exit(1);
+}
+
+program
+    .usage('--shared <dir> --repository <repo> [--tag [name]]')
+    .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
+    .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
+    .option('-t --tag [name]', 'Tag (latest by default)')
+    .parse(process.argv);
+
+if (!program.shared || !program.repository) {
+    program.outputHelp();
     process.exit(1);
 }
 
 // Get input and output directory.
-const SHARED_DIR = process.argv[2];
+const SHARED_DIR = program.shared;
 const INPUT_DIR = path.join(SHARED_DIR, 'in');
 const OUTPUT_DIR = path.join(SHARED_DIR, 'out');
-const [GITHUB_OWNER, GITHUB_REPO] = process.argv[3].split('/');
-let GITHUB_TAG = process.argv[4];
+const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
+let GITHUB_TAG = program.tag;
 
 const GITHUB_AUTH_NAME = GITHUB_OWNER;
 const GITHUB_AUTH_TOKEN = process.env.GH_TOKEN;

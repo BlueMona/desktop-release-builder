@@ -22,7 +22,7 @@ Installation
 * In Parallels, create a shared folder between Mac and Windows, for example,
   ~/Shared/ (and probably disable all other shared folders for security).
   VM Options > Sharing > Custom folders.
-* Download this repository, open Terminal, change directory to downloaded
+* Download this repository, open Terminal, change directory to the downloaded
   repository and type: `npm install`.
 
 
@@ -32,8 +32,8 @@ Installation
 * Install node (latest, not LTS) - https://nodejs.org
 * Install Windows SDK - https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
 * XXX: install whatever drivers are needed for USB token.
-* Download this repository.
-
+* Download this repository, open "Node.js command prompt", change directory to
+  the downloaded repository and type: `npm install`.
 
 Dev notes
 ---------
@@ -49,7 +49,7 @@ Creating a release
 1. Launch Windows, open "Node.js command prompt".
 2. Go to the builder directory, type:
 
-	   node index Y:\ "certificate name"
+	   node winsigner --shared Y:\ --certificate "certificate name"
 
    (Assuming Y: is a disk mapping a shared folder from Mac to Windows,
    "certificate name" is the name of certificate to use -- either
@@ -62,7 +62,7 @@ Creating a release
 3. On a Mac, in Terminal go to the builder directory, type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       node index ~/Shared PeerioTechnologies/peerio-desktop v0.0.0
+       node builder --shared ~/Shared --repository PeerioTechnologies/peerio-desktop --tag v0.0.0
 
    `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 

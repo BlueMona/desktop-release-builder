@@ -19,20 +19,31 @@ const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
 const { Queue, moveFileToDir, watchDir, criticalError } = require('./helpers');
+const program = require('commander');
 
-// Check command-line arguments.
-if (process.argv.length < 3) {
-    console.error('Usage: node winsigner.js SHARED_DIR [CERT_NAME]');
+if (process.platform !== 'win32') {
+    console.error('Run this program on Windows');
+    process.exit(1);
+}
+
+program
+    .usage('--shared <dir> [--certificate <name>]')
+    .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
+    .option('-c --certificate [name]', 'Certificate name (or file name ending with .pfx)')
+    .parse(process.argv);
+
+if (!program.shared) {
+    program.outputHelp();
     process.exit(1);
 }
 
 console.log('Windows signing service started.')
 
 // Get input and output directory.
-const SHARED_DIR = process.argv[2];
+const SHARED_DIR = program.shared;
 const INPUT_DIR = path.join(SHARED_DIR, 'in');
 const OUTPUT_DIR = path.join(SHARED_DIR, 'out');
-const CERT_NAME = process.argv[3];
+const CERT_NAME = program.certificate;
 
 // Find sign tool.
 const signTool = findSignToolBinary();
