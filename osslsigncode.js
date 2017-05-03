@@ -10,7 +10,6 @@
  */
 
 /** Parallels shared directory between Mac and Windows */
-// TODO(dchest): make it an environment var?
 const SHARED_DIR = process.env.SHARED_DIR;
 
 const fs = require('fs');
