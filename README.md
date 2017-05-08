@@ -46,6 +46,9 @@ In `project.json`:
 Creating a release
 ------------------
 
+First of all, tag a new release.
+
+
 1. Launch Windows, open "Node.js command prompt".
 2. Go to the builder directory, type:
 
