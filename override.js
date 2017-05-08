@@ -70,4 +70,6 @@ function override(srcDir, dstDir) {
     );
 }
 
-module.exports = override;
+module.exports = {
+    override
+};
