@@ -98,8 +98,12 @@ async function main() {
     } catch (ex) {
         criticalError(ex);
     } finally {
-        if (sourceTempDir) rimraf.sync(sourceTempDir);
         if (overridesDir) rimraf.sync(overridesDir);
+        if (program.publish) {
+            if (sourceTempDir) rimraf.sync(sourceTempDir);
+        } else {
+            console.log(`Build result is in ${sourceTempDir}`);
+        }
     }
 }
 
