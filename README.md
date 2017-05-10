@@ -22,8 +22,7 @@ Installation
 * In Parallels, create a shared folder between Mac and Windows, for example,
   ~/Shared/ (and probably disable all other shared folders for security).
   VM Options > Sharing > Custom folders.
-* Download this repository, open Terminal, change directory to the downloaded
-  repository and type: `npm install`.
+* Open Terminal and type: `npm install -g ssh://git@github.com:PeerioTechnologies/desktop-release-builder.git`.
 
 
 ### Windows (in Paralllels)
@@ -32,8 +31,10 @@ Installation
 * Install node (latest, not LTS) - https://nodejs.org
 * Install Windows SDK - https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
 * XXX: install whatever drivers are needed for USB token.
-* Download this repository, open "Node.js command prompt", change directory to
-  the downloaded repository and type: `npm install`.
+* "Node.js command prompt" and type `npm install -g ssh://git@github.com:PeerioTechnologies/desktop-release-builder.git`
+(Alternatively, transfer download this repository, transfer files to Windows,
+and type `npm install -g` inside the directory)
+
 
 Dev notes
 ---------
@@ -50,9 +51,9 @@ First of all, tag a new release.
 
 
 1. Launch Windows, open "Node.js command prompt".
-2. Go to the builder directory, type:
+2. Type:
 
-	   node winsigner --shared Y:\ --certificate "certificate name"
+	   peerio-desktop-signer --shared Y:\ --certificate "certificate name"
 
    (Assuming Y: is a disk mapping a shared folder from Mac to Windows,
    "certificate name" is the name of certificate to use -- either
@@ -62,13 +63,13 @@ First of all, tag a new release.
    so it can sign as many releases as needed without starting it
    again.
 
-3. On a Mac, in Terminal go to the builder directory, type:
+3. On a Mac, open Terminal and type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       node builder --shared ~/Shared \
-                    --repository PeerioTechnologies/peerio-desktop \
-                    --tag v0.0.0 \
-                    --publish
+       peerio-desktop-release --shared ~/Shared \
+                              --repository PeerioTechnologies/peerio-desktop \
+                              --tag v0.0.0 \
+                              --publish
 
    `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 
@@ -91,11 +92,11 @@ Applying overrides from other repositories
 Pass `--override` option to builder with repository containing overrides:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       node builder --shared ~/Shared \
-                    --repository PeerioTechnologies/peerio-desktop \
-                    --overrides PeerioTechnologies/whitelabel
-                    --tag v0.0.0 \
-                    --publish
+       peerio-desktop-release  --shared ~/Shared \
+                               --repository PeerioTechnologies/peerio-desktop \
+                               --overrides PeerioTechnologies/whitelabel
+                               --tag v0.0.0 \
+                               --publish
 
 If `--published` is passed, the overrides repository will be tagged with the
 new release. **Release will be published to the repository specified in

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Fetches project from GitHub, builds it, creates draft GitHub release and
  * uploads binaries there.
@@ -25,7 +27,7 @@ if (process.platform !== 'darwin') {
 }
 
 program
-    .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish]')
+    .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish | --destination <dir>]')
     .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
