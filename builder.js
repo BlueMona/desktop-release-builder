@@ -34,9 +34,10 @@ program
     .option('-p --publish', 'Publish release')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides')
+    .option('-n --nosign', 'Do not sign Windows release')
     .parse(process.argv);
 
-if (!program.shared || !program.repository) {
+if ((!program.shared && !program.nosign) || !program.repository) {
     program.outputHelp();
     process.exit(1);
 }
@@ -48,10 +49,14 @@ if ((!program.publish && !program.destination) ||
     process.exit(1);
 }
 
+if (program.shared && program.nosign) {
+    console.log('Error: either --shared or --nosign flag required, but not both.')
+    program.outputHelp();
+    process.exit(1);
+}
+
 // Get input and output directory.
 const SHARED_DIR = program.shared;
-const INPUT_DIR = path.join(SHARED_DIR, 'in');
-const OUTPUT_DIR = path.join(SHARED_DIR, 'out');
 const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
 let GITHUB_TAG = program.tag;
 
@@ -66,19 +71,23 @@ if (!GITHUB_AUTH_TOKEN) {
     process.exit(2);
 }
 
-// Check that directories exist.
-try {
-    fs.accessSync(INPUT_DIR);
-} catch (ex) {
-    console.error(`Cannot access input directory ${INPUT_DIR}`);
-    process.exit(3);
-}
+// Check that in/out directories exist.
+if (SHARED_DIR) {
+    const INPUT_DIR = path.join(SHARED_DIR, 'in');
+    const OUTPUT_DIR = path.join(SHARED_DIR, 'out');
+    try {
+        fs.accessSync(INPUT_DIR);
+    } catch (ex) {
+        console.error(`Cannot access input directory ${INPUT_DIR}`);
+        process.exit(3);
+    }
 
-try {
-    fs.accessSync(OUTPUT_DIR);
-} catch (ex) {
-    console.error(`Cannot access output directory ${OUTPUT_DIR}`);
-    process.exit(4);
+    try {
+        fs.accessSync(OUTPUT_DIR);
+    } catch (ex) {
+        console.error(`Cannot access output directory ${OUTPUT_DIR}`);
+        process.exit(4);
+    }
 }
 
 if (program.destination) {
@@ -170,20 +179,18 @@ function buildRelease(dir, tag) {
     return new Promise((fulfill, reject) => {
         const buildFlags = tag.includes('-') ? '--prerelease' : '';
         const publish = program.publish ? 'always' : 'never';
-        let cmds = [
+        const cmds = [
             'NODE_ENV=development npm install',
             'NODE_ENV=production npm run dist',
             `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --mac --linux --publish ${publish} --draft ${buildFlags}`
         ];
-        const builder = spawn('sh', ['-c', cmds.join(' && ')], {
-            cwd: dir,
-            env: Object.assign({}, process.env, {
-                SHARED_DIR: SHARED_DIR,
-                SIGNTOOL_PATH: path.join(__dirname, 'osslsigncode.js'),
-                WIN_CSC_LINK: 'ignore', // any string is needed to trick builder into performing Windows codesigning
-                GH_TOKEN: GITHUB_AUTH_TOKEN
-            })
-        });
+        const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
+        if (!program.nosign) {
+            env.SHARED_DIR = SHARED_DIR;
+            env.SIGNTOOL_PATH = path.join(__dirname, 'osslsigncode.js');
+            env.WIN_CSC_LINK = 'ignore'; // any string to trick builder into performing Windows codesigning
+        }
+        const builder = spawn('sh', ['-c', cmds.join(' && ')], { cwd: dir, env });
         builder.stdout.on('data', data => {
             console.log(data.toString());
         });
