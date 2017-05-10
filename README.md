@@ -25,7 +25,7 @@ Installation
 * Open Terminal and type: `npm install -g ssh://git@github.com:PeerioTechnologies/desktop-release-builder.git`.
 
 
-### Windows (in Paralllels)
+### Windows (in Parallels)
 
 * Install git - https://git-scm.org
 * Install node (latest, not LTS) - https://nodejs.org
@@ -89,14 +89,14 @@ First of all, tag a new release.
 Applying overrides from other repositories
 ------------------------------------------
 
-Pass `--override` option to builder with repository containing overrides:
+Pass `--overrides` option to builder with repository containing overrides:
 
-       export GH_TOKEN=0000000000000000000000000000000000000000
-       peerio-desktop-release  --shared ~/Shared \
-                               --repository PeerioTechnologies/peerio-desktop \
-                               --overrides PeerioTechnologies/whitelabel
-                               --tag v0.0.0 \
-                               --publish
+    export GH_TOKEN=0000000000000000000000000000000000000000
+    peerio-desktop-release  --shared ~/Shared \
+                            --repository PeerioTechnologies/peerio-desktop \
+                            --overrides PeerioTechnologies/whitelabel
+                            --tag v0.0.0 \
+                            --publish
 
 If `--published` is passed, the overrides repository will be tagged with the
 new release. **Release will be published to the repository specified in
