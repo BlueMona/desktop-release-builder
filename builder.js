@@ -81,11 +81,11 @@ try {
     process.exit(4);
 }
 
-if (process.destination) {
+if (program.destination) {
     try {
-        fs.accessSync(process.destination);
+        fs.accessSync(program.destination);
     } catch (ex) {
-        console.error(`Cannot access destination directory ${process.destination}`);
+        console.error(`Cannot access destination directory ${program.destination}`);
         process.exit(4);
     }
 }
@@ -121,7 +121,7 @@ async function main() {
         if (program.publish) {
             if (sourceTempDir) rimraf.sync(sourceTempDir);
         } else {
-            const newPath = path.join(process.destination, path.basename(sourceTempDir));
+            const newPath = path.join(program.destination, path.basename(sourceTempDir));
             fs.renameSync(sourceTempDir, newPath);
             console.log(`Build result is in ${newPath}`);
         }
@@ -172,7 +172,7 @@ function buildRelease(dir, tag) {
         const publish = program.publish ? 'always' : 'never';
         let cmds = [
             'NODE_ENV=development npm install',
-            'NODE_ENV=production npm run compile',
+            'NODE_ENV=production npm run dist',
             `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --mac --linux --publish ${publish} --draft ${buildFlags}`
         ];
         const builder = spawn('sh', ['-c', cmds.join(' && ')], {
