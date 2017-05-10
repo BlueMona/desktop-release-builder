@@ -30,10 +30,18 @@ program
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
     .option('-p --publish', 'Publish release')
+    .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides')
     .parse(process.argv);
 
 if (!program.shared || !program.repository) {
+    program.outputHelp();
+    process.exit(1);
+}
+
+if ((!program.publish && !program.destination) ||
+    (program.publish && program.destination)) {
+    console.log('Error: either --publish or --dest flag required, but not both.')
     program.outputHelp();
     process.exit(1);
 }
@@ -71,6 +79,15 @@ try {
     process.exit(4);
 }
 
+if (process.destination) {
+    try {
+        fs.accessSync(process.destination);
+    } catch (ex) {
+        console.error(`Cannot access destination directory ${process.destination}`);
+        process.exit(4);
+    }
+}
+
 main();
 
 async function main() {
@@ -102,7 +119,9 @@ async function main() {
         if (program.publish) {
             if (sourceTempDir) rimraf.sync(sourceTempDir);
         } else {
-            console.log(`Build result is in ${sourceTempDir}`);
+            const newPath = path.join(process.destination, path.basename(sourceTempDir));
+            fs.renameSync(sourceTempDir, newPath);
+            console.log(`Build result is in ${newPath}`);
         }
     }
 }
