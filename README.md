@@ -102,6 +102,9 @@ If `--published` is passed, the overrides repository will be tagged with the
 new release. **Release will be published to the repository specified in
 `package.json`, so make sure overrides do override it.**
 
+Overrides repository name (`--overrides`) can contain a branch name after '#',
+for example: `PeerioTechnologies/whitelabel#branch`.
+
 
 If something goes wrong
 -----------------------

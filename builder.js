@@ -255,15 +255,16 @@ function getLatestGithubTag(organization, project) {
 /**
  * Applies overrides from overridesRepo to targerDir.
  *
- * @param overridesRepo {string} github repository ORGANIZATION/REPO
+ * @param overridesRepo {string} github repository ORGANIZATION/REPO[#branch]
  * @param targetDir {string} target directory with Peerio desktop sources
  * @returns {string} temporary directory with cloned overrides repository
  */
 async function applyOverrides(overridesRepo, targetDir) {
     let tempDir;
+    const [repo, branch] = splitRepoBranch(overridesRepo);
     try {
         tempDir = await makeTempDir();
-        await execp(`git clone --depth=1 git@github.com:${overridesRepo}.git ${tempDir}`, tempDir);
+        await execp(`git clone --depth=1 --branch=${branch} git@github.com:${repo}.git ${tempDir}`, tempDir);
         await override(tempDir, targetDir);
         if (program.publish) {
             // Tag a new release in overrides repo and push the tag.
@@ -274,4 +275,23 @@ async function applyOverrides(overridesRepo, targetDir) {
         if (tempDir) rimraf.sync(tempDir);
         criticalError(ex);
     }
+}
+
+/**
+ * Extracts repo and branch name from repo url:
+ *
+ * bla/proj#branch -> ["github.com/bla/proj", "branch"]
+ * bla/proj        -> ["github.com/bla/proj", "master"]
+ *
+ * @param {string} url
+ */
+function splitRepoBranch(url) {
+    const i = url.lastIndexOf('#');
+    if (i < 0) {
+        return [url, "master"];
+    }
+    return [
+        url.substring(0, i),
+        url.substring(i + 1)
+    ]
 }
