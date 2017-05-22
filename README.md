@@ -78,6 +78,10 @@ First of all, tag a new release.
 
    (Assuming `~/Shared` is a shared folder between Mac and Windows)
 
+   (For testing, instead of `--publish`, you can pass `--destination DIR`,
+    in which case the build result won't be published, but will be moved
+    to the specified directory.)
+
 4. Wait for the project to build, check Windows for
    USB token password input. Enter password.
 
@@ -98,7 +102,7 @@ Pass `--overrides` option to builder with repository containing overrides:
                             --tag v0.0.0 \
                             --publish
 
-If `--published` is passed, the overrides repository will be tagged with the
+If `--publish` is passed, the overrides repository will be tagged with the
 new release. **Release will be published to the repository specified in
 `package.json`, so make sure overrides do override it.**
 
