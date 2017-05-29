@@ -94,8 +94,10 @@ if (program.destination) {
     try {
         fs.mkdirSync(program.destination);
     } catch (ex) {
-        console.error(`Cannot access destination directory ${program.destination}`);
-        process.exit(4);
+        if (ex.code !== 'EEXIST') {
+          console.error(`Cannot access destination directory ${program.destination}`);
+          process.exit(4);
+        }
     }
 }
 
