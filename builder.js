@@ -92,7 +92,7 @@ if (SHARED_DIR) {
 
 if (program.destination) {
     try {
-        fs.accessSync(program.destination);
+        fs.mkdirSync(program.destination);
     } catch (ex) {
         console.error(`Cannot access destination directory ${program.destination}`);
         process.exit(4);
