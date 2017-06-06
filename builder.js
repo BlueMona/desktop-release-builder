@@ -191,7 +191,7 @@ function buildRelease(dir, tag) {
         if (!program.nosign) {
             env.SHARED_DIR = SHARED_DIR;
             env.SIGNTOOL_PATH = path.join(__dirname, 'osslsigncode.js');
-            env.WIN_CSC_LINK = ''; // any string to trick builder into performing Windows codesigning
+            env.WIN_CSC_LINK = 'ZmFrZWNlcnQ='; // any b64 string to trick builder into performing Windows codesigning
         }
         const builder = spawn('sh', ['-c', cmds.join(' && ')], { cwd: dir, env });
         builder.stdout.on('data', data => {
