@@ -183,6 +183,7 @@ function buildRelease(dir, tag) {
         const publish = program.publish ? 'always' : 'never';
         const cmds = [
             'NODE_ENV=development npm install',
+            'cd app && NODE_ENV=production npm install && cd ..',
             'NODE_ENV=production npm run dist',
             `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --mac --linux --publish ${publish} --draft ${buildFlags}`
         ];
