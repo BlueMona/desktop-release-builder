@@ -271,8 +271,8 @@ async function applyOverrides(overridesRepo, targetDir) {
         await override(tempDir, targetDir);
         if (program.publish) {
             // Tag a new release in overrides repo and push the tag,
-            // but only if the tag starts with 'v' (e.g. v1.0.0).
-            if (GITHUB_TAG[0] === 'v') {
+            // but only if the tag starts with 'v#.' (e.g. v1.0.0)
+            if (/v\d+\./.test(GITHUB_TAG)) {
               await execp(`git tag ${GITHUB_TAG}`, tempDir);
               await execp(`git push --tags`, tempDir);
             }
