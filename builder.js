@@ -270,9 +270,12 @@ async function applyOverrides(overridesRepo, targetDir) {
         await execp(`git clone --depth=1 --branch=${branch} git@github.com:${repo}.git ${tempDir}`, tempDir);
         await override(tempDir, targetDir);
         if (program.publish) {
-            // Tag a new release in overrides repo and push the tag.
-            await execp(`git tag ${GITHUB_TAG}`, tempDir);
-            await execp(`git push --tags`, tempDir);
+            // Tag a new release in overrides repo and push the tag,
+            // but only if the tag starts with 'v' (e.g. v1.0.0).
+            if (GITHUB_TAG[0] === 'v') {
+              await execp(`git tag ${GITHUB_TAG}`, tempDir);
+              await execp(`git push --tags`, tempDir);
+            }
         }
     } catch (ex) {
         if (tempDir) rimraf.sync(tempDir);
