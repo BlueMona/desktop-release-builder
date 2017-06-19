@@ -32,6 +32,7 @@ program
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
     .option('-p --publish', 'Publish release')
+    .option('-a --prerelease', 'Mark as pre-release on GitHub')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides')
     .option('-n --nosign', 'Do not sign Windows release')
@@ -179,7 +180,7 @@ function writeFile(file, data) {
  */
 function buildRelease(dir, tag) {
     return new Promise((fulfill, reject) => {
-        const buildFlags = tag.includes('-') ? '--prerelease' : '';
+        const buildFlags = program.prerelease ? '--prerelease' : '';
         const publish = program.publish ? 'always' : 'never';
         const cmds = [
             'NODE_ENV=development npm install',

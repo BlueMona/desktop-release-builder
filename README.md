@@ -90,6 +90,13 @@ First of all, tag a new release.
 6. Edit the release draft on GitHub and publish it.
 
 
+Creating a pre-release
+----------------------
+
+Same steps as release, but add `--prerelease` flag. In this case,
+the release will be marked as "Pre-release" on GitHub.
+
+
 Applying overrides from other repositories
 ------------------------------------------
 
