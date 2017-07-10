@@ -41,7 +41,7 @@ Dev notes
 
 In `project.json`:
 
-* `build.win.publisherName` should be set (e.g. to "Peerio Technologies Inc.")
+* `build.win.publisherName` should be set (e.g. to "Technologies Peerio Inc.")
 
 
 Creating a release
