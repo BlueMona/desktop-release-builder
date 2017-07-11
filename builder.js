@@ -186,7 +186,7 @@ function buildRelease(dir, tag) {
             'NODE_ENV=development npm install',
             'cd app && NODE_ENV=production npm install && cd ..',
             'NODE_ENV=production npm run dist',
-            `NODE_ENV=production ./node_modules/.bin/build --windows --x64 --ia32 --mac --linux --publish ${publish} --draft ${buildFlags}`
+            `NODE_ENV=production ./node_modules/.bin/build --windows --mac --linux --publish ${publish} --draft ${buildFlags}`
         ];
         const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
         if (!program.nosign) {
