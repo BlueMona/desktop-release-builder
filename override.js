@@ -57,7 +57,7 @@ function override(srcDir, dstDir) {
         dot: true
     }).then(results => {
         results.forEach(name => {
-            console.log(`File copied: ${name}`);
+            console.log(`File copied: ${path.basename(name.dest)}`);
         });
     });
 }
