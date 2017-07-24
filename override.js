@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Overrides JSON values and files.
  */
@@ -6,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const merge = require('lodash/merge');
-const { ncp } = require('ncp');
+const copy = require('recursive-copy');
 
 if (require.main === module) {
     // Launched as an executable.
@@ -51,23 +52,14 @@ function override(srcDir, dstDir) {
 
     // Merge file trees.
     const fileOverridesPath = path.join(srcDir, 'file-overrides');
-    return new Promise((fulfill, reject) =>
-        ncp(fileOverridesPath, dstDir, {
-            clobber: true,
-            stopOnErr: true,
-            filter: filepath => {
-                const name = path.relative(fileOverridesPath, filepath);
-                if (name) {
-                    // XXX: will also print directory names
-                    console.log(`File copied: ${name}`);
-                }
-                return true;
-            }
-        }, err => {
-            if (err) return reject(err);
-            fulfill();
-        })
-    );
+    return copy(fileOverridesPath, dstDir, {
+        overwrite: true,
+        dot: true
+    }).then(results => {
+        results.forEach(name => {
+            console.log(`File copied: ${name}`);
+        });
+    });
 }
 
 module.exports = {
