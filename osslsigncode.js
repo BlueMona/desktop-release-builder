@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// @ts-check
 /**
  * osslsigncode replacement that delegates work to
  * Windows signer, making electron- builder think that

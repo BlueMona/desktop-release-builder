@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// @ts-check
 /**
  * Fetches project from GitHub, builds it, creates draft GitHub release and
  * uploads binaries there.
@@ -18,8 +18,10 @@ const semver = require('semver-extra');
 const rimraf = require('rimraf');
 const download = require('download');
 const program = require('commander');
-const { makeTempDir, criticalError, execp } = require('./helpers');
+const { makeTempDir, criticalError, execp, getFileNames, writeFile } = require('./helpers');
 const { override } = require('./override');
+const ManifestMaker = require('peerio-update-maker');
+const GitHubAPI = require('github');
 
 if (process.platform !== 'darwin') {
     console.error('Run this program on macOS (for macOS, Windows, Linux builder)');
@@ -27,7 +29,7 @@ if (process.platform !== 'darwin') {
 }
 
 program
-    .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish | --destination <dir>]')
+    .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish | --destination <dir>] [--key [filename] --manifest [dir]]')
     .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
@@ -36,6 +38,7 @@ program
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides')
     .option('-n --nosign', 'Do not sign Windows release')
+    .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -56,6 +59,10 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
+if (!program.key) {
+    console.warn('Warning: not making update manifest because no --key option specified');
+}
+
 // Get input and output directory.
 const SHARED_DIR = program.shared;
 const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
@@ -71,6 +78,20 @@ if (!GITHUB_AUTH_TOKEN) {
     );
     process.exit(2);
 }
+
+var github = new GitHubAPI({
+    protocol: "https",
+    host: "api.github.com",
+    headers: {
+        "user-agent": "peerio-release-builder"
+    }
+});
+
+github.authenticate({
+    type: "token",
+    token: GITHUB_AUTH_TOKEN
+});
+
 
 // Check that in/out directories exist.
 if (SHARED_DIR) {
@@ -126,6 +147,28 @@ async function main() {
 
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir, GITHUB_TAG);
+
+        if (program.key) {
+            // Get correct target repository where the update is published.
+            const target = program.overrides
+                ? splitRepoBranch(program.overrides)[0]
+                : program.repository;
+
+            const [targetOwner, targetRepo] = target.split('/');
+
+            console.log(`Making update manifest`);
+            const manifest = await makeUpdaterManifest(
+                program.key,
+                projectDir,
+                targetOwner,
+                targetRepo,
+                GITHUB_TAG
+            );
+            if (program.publish) {
+                console.log('Uploading update manifest to GitHub release');
+                await uploadReleaseAsset(manifest, targetOwner, targetRepo, GITHUB_TAG);
+            }
+        }
     } catch (ex) {
         criticalError(ex);
     } finally {
@@ -162,20 +205,71 @@ function downloadGitHubTag(organization, project, tag, dest) {
 }
 
 /**
- * Writes data to file, returning a promise.
+ * Creates updater peerio-updater manifest for known dist files in the project
+ * directory and returns promise resolving to manifest contents.
+ *
+ * @param {string} dir project directory
+ * @param {string} owner project owner ("org" from github.com/org/repo)
+ * @param {string} repo project repository ("repo" from github.com/org/repo)
+ * @param {string} tag git tag
+ * @returns Promise<string> manifest file path
  */
-function writeFile(file, data) {
-    return new Promise((fulfill, reject) => {
-        fs.writeFile(file, data, err => {
-            if (err) return reject(err);
-            fulfill(file);
+function makeUpdaterManifest(keyfile, dir, owner, repo, tag) {
+    const distpath = path.join(dir, 'dist');
+    // xxx: for now, sign zip files as mac updates, later we'll probably use dmg.
+    return getFileNames(distpath, /\.(zip|exe|AppImage)$/i).then(names => {
+        const m = new ManifestMaker(tag, true); // XXX: all updates are currently mandatory
+        names.forEach(name => {
+            let platform;
+            if (/\.zip$/i.test(name)) {
+                platform = 'mac';
+            } else if (/\.exe$/i.test(name)) {
+                platform = 'windows';
+            } else if (/64\.AppImage$/i.test(name)) {
+                platform = 'linux-x64';
+            } else {
+                return; // skip this file
+            }
+            m.addGitHubFile(platform, path.join(distpath, name), owner + '/' + repo);
         });
+        return m.generateWithKeyFile(keyfile).then(data =>
+            writeFile(path.join(distpath, 'manifest.txt'), data)
+        );
     });
 }
 
 /**
+ *
+ * @param {string} filePath asset file path
+ * @param {string} owner project owner ("org" from github.com/org/repo)
+ * @param {string} repo project repository ("repo" from github.com/org/repo)
+ * @param {string} tag git tag
+ * @returns Promise<void>
+ */
+async function uploadReleaseAsset(filePath, owner, repo, tag) {
+    // Can't get release by tag name, because draft releases are
+    // not assigned to any tag. Thus we fetch one page of releases,
+    // hoping that the one we publish is in there, and lookup release id
+    // by tag_name.
+    const name = path.basename(filePath); // TODO: sanitize for GitHub
+    const releases = await github.repos.getReleases({ owner, repo });
+    for (let i = 0; i < releases.data.length; i++) {
+        // I think there can be multiple draft releases assigned to
+        // the same tag (until they are published), so we want to
+        // upload this asset to all of them, since we don't know which
+        // one was created by the current run of electron-builder.
+        const { tag_name, id } = releases.data[i];
+        console.log(`Uploading ${name} to release (tag=${tag_name}, id = ${id})`);
+        if (tag_name === tag) {
+            await github.repos.uploadAsset({ owner, repo, id, filePath, name });
+        }
+    }
+}
+
+/**
  * Builds release in the project directory.
- * @param dir project directory
+ * @param {string} dir project directory
+ * @param {string} tag git tag
  * @returns Promise<void>
  */
 function buildRelease(dir, tag) {
@@ -218,6 +312,7 @@ function buildRelease(dir, tag) {
  * @param project
  */
 function fetchGithubTags(organization, project) {
+    // TODO: replace this with GitHubAPI.
     return new Promise((fulfill, reject) => {
         https.get({
             protocol: 'https:',
@@ -261,7 +356,7 @@ function getLatestGithubTag(organization, project) {
  *
  * @param overridesRepo {string} github repository ORGANIZATION/REPO[#branch]
  * @param targetDir {string} target directory with Peerio desktop sources
- * @returns {string} temporary directory with cloned overrides repository
+ * @returns {Promise<void>} temporary directory with cloned overrides repository
  */
 async function applyOverrides(overridesRepo, targetDir) {
     let tempDir;
@@ -274,8 +369,8 @@ async function applyOverrides(overridesRepo, targetDir) {
             // Tag a new release in overrides repo and push the tag,
             // but only if the tag starts with 'v#.' (e.g. v1.0.0)
             if (/v\d+\./.test(GITHUB_TAG)) {
-              await execp(`git tag ${GITHUB_TAG}`, tempDir);
-              await execp(`git push --tags`, tempDir);
+                await execp(`git tag ${GITHUB_TAG}`, tempDir);
+                await execp(`git push --tags`, tempDir);
             }
         }
     } catch (ex) {
@@ -300,5 +395,5 @@ function splitRepoBranch(url) {
     return [
         url.substring(0, i),
         url.substring(i + 1)
-    ]
+    ];
 }

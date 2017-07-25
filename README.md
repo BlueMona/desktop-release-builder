@@ -66,7 +66,8 @@ First of all, tag a new release.
 3. On a Mac, open Terminal and type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       peerio-desktop-release --shared ~/Shared \
+       peerio-desktop-release --key /path/to/secretkey
+                              --shared ~/Shared \
                               --repository PeerioTechnologies/peerio-desktop \
                               --tag v0.0.0 \
                               --publish
@@ -75,6 +76,12 @@ First of all, tag a new release.
 
    Replace v0.0.0 with the actual tag for the version.
    If the tag is not given, fetches the greatest version (according to semver).
+
+   `--key` parameter specifies path to
+   [peerio-update-maker](https://github.com/PeerioTechnologies/peerio-update-maker)
+   secret key corresponding to the public key that is used by peerio-updater to
+   verify update manifest for this project. Close to the end of publishing,
+   you'll be asked to enter your password for this key.
 
    (Assuming `~/Shared` is a shared folder between Mac and Windows)
 
@@ -103,7 +110,8 @@ Applying overrides from other repositories
 Pass `--overrides` option to builder with repository containing overrides:
 
     export GH_TOKEN=0000000000000000000000000000000000000000
-    peerio-desktop-release  --shared ~/Shared \
+    peerio-desktop-release  --key /path/to/secretkey
+                            --shared ~/Shared \
                             --repository PeerioTechnologies/peerio-desktop \
                             --overrides PeerioTechnologies/whitelabel
                             --tag v0.0.0 \

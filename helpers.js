@@ -1,8 +1,10 @@
+// @ts-check
 // Helper functions and classes.
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const mkdirp = require('mkdirp');
 const { exec } = require('child_process');
 
 // Enqueues a function returning a promise to be run after the currently
@@ -159,11 +161,52 @@ function execp(command, cwd, log = true) {
     })
 }
 
+/**
+ * Returns a promise resolving to filenames in dir matching
+ * the given regex (if no regex given, returns all filenames)
+ *
+ * @param {string} dir path
+ * @param {RegExp} [rx] optional regexp
+ * @returns Promise<Array<string>>
+ */
+function getFileNames(dir, rx) {
+    return new Promise((fulfill, reject) => {
+        const out = [];
+        fs.readdir(dir, (err, names) => {
+            if (err) return reject(err);
+            if (!rx) return fulfill(names);
+            fulfill(names.filter(n => rx.test(n)));
+        });
+    });
+}
+
+/**
+ * Writes data to file.
+ * Creates parent directories for file if they don't exist.
+ *
+ * @param {string} filename
+ * @param {any} data
+ * @returns {Promise<string>} filename
+ */
+function writeFile(filename, data) {
+    return new Promise((fulfill, reject) => {
+        mkdirp(path.dirname(filename), err => {
+            if (err) return reject(err);
+            fs.writeFile(filename, data, err => {
+                if (err) return reject(err);
+                fulfill(filename);
+            });
+        });
+    });
+}
+
 module.exports = {
     Queue,
     criticalError,
     moveFileToDir,
     makeTempDir,
     watchDir,
-    execp
+    execp,
+    getFileNames,
+    writeFile
 };
