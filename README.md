@@ -113,7 +113,7 @@ Pass `--overrides` option to builder with repository containing overrides:
     peerio-desktop-release  --key /path/to/secretkey \
                             --shared ~/Shared \
                             --repository PeerioTechnologies/peerio-desktop \
-                            --overrides PeerioTechnologies/whitelabel
+                            --overrides PeerioTechnologies/whitelabel \
                             --tag v0.0.0 \
                             --publish
 
