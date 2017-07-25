@@ -66,7 +66,7 @@ First of all, tag a new release.
 3. On a Mac, open Terminal and type:
 
        export GH_TOKEN=0000000000000000000000000000000000000000
-       peerio-desktop-release --key /path/to/secretkey
+       peerio-desktop-release --key /path/to/secretkey \
                               --shared ~/Shared \
                               --repository PeerioTechnologies/peerio-desktop \
                               --tag v0.0.0 \
@@ -110,7 +110,7 @@ Applying overrides from other repositories
 Pass `--overrides` option to builder with repository containing overrides:
 
     export GH_TOKEN=0000000000000000000000000000000000000000
-    peerio-desktop-release  --key /path/to/secretkey
+    peerio-desktop-release  --key /path/to/secretkey \
                             --shared ~/Shared \
                             --repository PeerioTechnologies/peerio-desktop \
                             --overrides PeerioTechnologies/whitelabel
