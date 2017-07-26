@@ -14,14 +14,12 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { spawn } = require('child_process');
-const semver = require('semver-extra');
 const rimraf = require('rimraf');
-const download = require('download');
 const program = require('commander');
-const { makeTempDir, criticalError, execp, getFileNames, writeFile } = require('./helpers');
-const { override } = require('./override');
 const ManifestMaker = require('peerio-update-maker');
-const GitHubAPI = require('github');
+const { makeTempDir, criticalError, execp, getFileNames, writeFile } = require('./helpers');
+const { authenticate, downloadTagArchive, uploadReleaseAsset, getLatestTag } = require('./github');
+const { override } = require('./override');
 
 if (process.platform !== 'darwin') {
     console.error('Run this program on macOS (for macOS, Windows, Linux builder)');
@@ -68,9 +66,7 @@ const SHARED_DIR = program.shared;
 const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
 let GITHUB_TAG = program.tag;
 
-const GITHUB_AUTH_NAME = GITHUB_OWNER;
 const GITHUB_AUTH_TOKEN = process.env.GH_TOKEN;
-
 if (!GITHUB_AUTH_TOKEN) {
     console.error(
         'Please set GH_TOKEN environment variable to the correct GitHub ' +
@@ -79,26 +75,7 @@ if (!GITHUB_AUTH_TOKEN) {
     process.exit(2);
 }
 
-const github = new GitHubAPI({
-    protocol: "https",
-    host: "api.github.com",
-    headers: {
-        "user-agent": "peerio-release-builder"
-    }
-});
-
-github.authenticate({
-    type: "token",
-    token: GITHUB_AUTH_TOKEN
-});
-
-// A helper to fetch all data from multi-page GitHub API responses.
-function getAllResults(res) {
-    if (!github.hasNextPage(res)) {
-        return res.data;
-    }
-    return github.getNextPage(res).then(getAllResults).then(r => res.data.concat(r));
-}
+authenticate(GITHUB_AUTH_TOKEN);
 
 
 // Check that in/out directories exist.
@@ -139,14 +116,14 @@ async function main() {
 
     try {
         if (!GITHUB_TAG) {
-            GITHUB_TAG = await getLatestGithubTag(GITHUB_OWNER, GITHUB_REPO);
+            GITHUB_TAG = await getLatestTag(GITHUB_OWNER, GITHUB_REPO);
         }
 
         // Create temporary directory for source and build files.
         sourceTempDir = await makeTempDir();
 
         console.log(`Downloading release ${GITHUB_TAG}...`);
-        const projectDir = await downloadGitHubTag(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
+        const projectDir = await downloadTagArchive(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
 
         if (program.overrides) {
             // Apply overrides.
@@ -192,27 +169,6 @@ async function main() {
 }
 
 /**
- * Downloads a ZIP of a tag from GitHub repository
- * and extracts it to the destination folder.
- *
- * @param organization organization name, e.g. PeerioTechnologies
- * @param project project name, e.g. peerio-desktop
- * @param tag repo tag, e.g. v2.4.0
- * @param dest destination folder
- * @returns Promise<string> extracted directory name
- */
-function downloadGitHubTag(organization, project, tag, dest) {
-    const url = `https://github.com/${organization}/${project}/archive/${tag}.zip`;
-    return download(url, dest, {
-        extract: true,
-        auth: `${GITHUB_AUTH_NAME}:${GITHUB_AUTH_TOKEN}`
-    }).then(files => {
-        // First file is supposed to be directory name.
-        return path.join(dest, files[0].path);
-    });
-}
-
-/**
  * Creates updater peerio-updater manifest for known dist files in the project
  * directory and returns promise resolving to manifest contents.
  *
@@ -244,34 +200,6 @@ function makeUpdaterManifest(keyfile, dir, owner, repo, tag) {
             writeFile(path.join(distpath, 'manifest.txt'), data)
         );
     });
-}
-
-/**
- *
- * @param {string} filePath asset file path
- * @param {string} owner project owner ("org" from github.com/org/repo)
- * @param {string} repo project repository ("repo" from github.com/org/repo)
- * @param {string} tag git tag
- * @returns Promise<void>
- */
-async function uploadReleaseAsset(filePath, owner, repo, tag) {
-    // Can't get release by tag name, because draft releases are
-    // not assigned to any tag. Thus we fetch one page of releases,
-    // hoping that the one we publish is in there, and lookup release id
-    // by tag_name.
-    const name = path.basename(filePath); // TODO: sanitize for GitHub
-    const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
-    for (let i = 0; i < releases.data.length; i++) {
-        // I think there can be multiple draft releases assigned to
-        // the same tag (until they are published), so we want to
-        // upload this asset to all of them, since we don't know which
-        // one was created by the current run of electron-builder.
-        const { tag_name, id } = releases.data[i];
-        console.log(`Uploading ${name} to release (tag=${tag_name}, id = ${id})`);
-        if (tag_name === tag) {
-            await github.repos.uploadAsset({ owner, repo, id, filePath, name });
-        }
-    }
 }
 
 /**
@@ -311,29 +239,6 @@ function buildRelease(dir, tag) {
             }
         });
     });
-}
-
-/**
- * Returns a list of tags from github project.
- *
- * @param owner
- * @param repo
- */
-function fetchGithubTags(owner, repo) {
-    return github.gitdata.getTags({ owner, repo })
-        .then(getAllResults)
-        .then(tags => tags.map(info => info.ref.replace('refs/tags/', '')));
-}
-
-/**
- * Return latest tag for project (according to semver)
- * @param owner
- * @param repo
- */
-function getLatestGithubTag(owner, repo) {
-    return fetchGithubTags(owner, repo)
-        .then(versions => versions.filter(v => semver.valid(v)))
-        .then(versions => 'v' + semver.valid(semver.max(versions)));
 }
 
 /**
