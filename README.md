@@ -9,6 +9,8 @@ Building is performed on macOS. Signing of Windows executables is delegated to a
 Installation
 ------------
 
+      npm install -g @peerio/desktop-release-builder
+
 ### Mac
 
 * Install Homebrew - https://brew.sh/
