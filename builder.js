@@ -79,7 +79,7 @@ if (!GITHUB_AUTH_TOKEN) {
     process.exit(2);
 }
 
-var github = new GitHubAPI({
+const github = new GitHubAPI({
     protocol: "https",
     host: "api.github.com",
     headers: {
@@ -91,6 +91,14 @@ github.authenticate({
     type: "token",
     token: GITHUB_AUTH_TOKEN
 });
+
+// A helper to fetch all data from multi-page GitHub API responses.
+function getAllResults(res) {
+    if (!github.hasNextPage(res)) {
+        return res.data;
+    }
+    return github.getNextPage(res).then(getAllResults).then(r => res.data.concat(r));
+}
 
 
 // Check that in/out directories exist.
@@ -252,7 +260,7 @@ async function uploadReleaseAsset(filePath, owner, repo, tag) {
     // hoping that the one we publish is in there, and lookup release id
     // by tag_name.
     const name = path.basename(filePath); // TODO: sanitize for GitHub
-    const releases = await github.repos.getReleases({ owner, repo });
+    const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
     for (let i = 0; i < releases.data.length; i++) {
         // I think there can be multiple draft releases assigned to
         // the same tag (until they are published), so we want to
@@ -308,47 +316,25 @@ function buildRelease(dir, tag) {
 /**
  * Returns a list of tags from github project.
  *
- * @param organization
- * @param project
+ * @param owner
+ * @param repo
  */
-function fetchGithubTags(organization, project) {
-    // TODO: replace this with GitHubAPI.
-    return new Promise((fulfill, reject) => {
-        https.get({
-            protocol: 'https:',
-            hostname: 'api.github.com',
-            path: `/repos/${organization}/${project}/git/refs/tags`,
-            headers: {
-                'User-Agent': 'peerio-builder'
-            },
-            auth: `${GITHUB_AUTH_NAME}:${GITHUB_AUTH_TOKEN}`
-        }, res => {
-            let rawData = '';
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => { rawData += chunk; });
-            res.on('end', () => {
-                if (res.statusCode !== 200) {
-                    reject(new Error(`Failed to fetch tags: ${res.statusCode}: ${res.statusMessage}\n${rawData}`));
-                    return;
-                }
-                const data = JSON.parse(rawData);
-                fulfill(data.map(info => info.ref.replace('refs/tags/', '')));
-            });
-        }).on('error', err => {
-            reject(err);
-        });
-    });
+function fetchGithubTags(owner, repo) {
+    // FIXME: we won't get latest tags if there are multiple pages of results.
+    return github.gitdata.getTags({ owner, repo })
+        .then(getAllResults)
+        .then(tags => tags.map(info => info.ref.replace('refs/tags/', '')));
 }
 
 /**
  * Return latest tag for project (according to semver)
- * @param organization
- * @param project
+ * @param owner
+ * @param repo
  */
-function getLatestGithubTag(organization, project) {
-    return fetchGithubTags(organization, project)
-        .then(tags => tags.map(t => t.substring(1)))
-        .then(versions => 'v' + semver.max(versions));
+function getLatestGithubTag(owner, repo) {
+    return fetchGithubTags(owner, repo)
+        .then(versions => versions.filter(v => semver.valid(v)))
+        .then(versions => 'v' + semver.valid(semver.max(versions)));
 }
 
 /**
