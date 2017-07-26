@@ -320,7 +320,6 @@ function buildRelease(dir, tag) {
  * @param repo
  */
 function fetchGithubTags(owner, repo) {
-    // FIXME: we won't get latest tags if there are multiple pages of results.
     return github.gitdata.getTags({ owner, repo })
         .then(getAllResults)
         .then(tags => tags.map(info => info.ref.replace('refs/tags/', '')));
