@@ -57,10 +57,6 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
-if (!program.key) {
-    console.warn('Warning: not making update manifest because no --key option specified');
-}
-
 // Get input and output directory.
 const SHARED_DIR = program.shared;
 const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
@@ -119,6 +115,15 @@ async function main() {
             GITHUB_TAG = await getLatestTag(GITHUB_OWNER, GITHUB_REPO);
         }
 
+        let manifestMaker;
+        if (program.key) {
+            manifestMaker = new ManifestMaker(GITHUB_TAG, true); // XXX: all updates are currently mandatory
+            console.log('Unlocking peerio-updater key file');
+            await manifestMaker.unlockKeyFile(program.key);
+        } else {
+            console.warn('Warning: not making update manifest because no --key option specified');
+        }
+
         // Create temporary directory for source and build files.
         sourceTempDir = await makeTempDir();
 
@@ -133,7 +138,7 @@ async function main() {
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir, GITHUB_TAG);
 
-        if (program.key) {
+        if (manifestMaker) {
             // Get correct target repository where the update is published.
             const target = program.overrides
                 ? splitRepoBranch(program.overrides)[0]
@@ -143,11 +148,10 @@ async function main() {
 
             console.log(`Making update manifest`);
             const manifest = await makeUpdaterManifest(
-                program.key,
+                manifestMaker,
                 projectDir,
                 targetOwner,
-                targetRepo,
-                GITHUB_TAG
+                targetRepo
             );
             if (program.publish) {
                 console.log('Uploading update manifest to GitHub release');
@@ -172,17 +176,17 @@ async function main() {
  * Creates updater peerio-updater manifest for known dist files in the project
  * directory and returns promise resolving to manifest contents.
  *
+ * @param {ManifestMaker} m manifest maker instance
  * @param {string} dir project directory
  * @param {string} owner project owner ("org" from github.com/org/repo)
  * @param {string} repo project repository ("repo" from github.com/org/repo)
  * @param {string} tag git tag
  * @returns Promise<string> manifest file path
  */
-function makeUpdaterManifest(keyfile, dir, owner, repo, tag) {
+function makeUpdaterManifest(m, dir, owner, repo) {
     const distpath = path.join(dir, 'dist');
     // xxx: for now, sign zip files as mac updates, later we'll probably use dmg.
     return getFileNames(distpath, /\.(zip|exe|AppImage)$/i).then(names => {
-        const m = new ManifestMaker(tag, true); // XXX: all updates are currently mandatory
         names.forEach(name => {
             let platform;
             if (/\.zip$/i.test(name)) {
@@ -196,7 +200,7 @@ function makeUpdaterManifest(keyfile, dir, owner, repo, tag) {
             }
             m.addGitHubFile(platform, path.join(distpath, name), owner + '/' + repo);
         });
-        return m.generateWithKeyFile(keyfile).then(data =>
+        return m.generate().then(data =>
             writeFile(path.join(distpath, 'manifest.txt'), data)
         );
     });
@@ -216,7 +220,7 @@ function buildRelease(dir, tag) {
             'NODE_ENV=development npm install',
             'cd app && NODE_ENV=production npm install && cd ..',
             'NODE_ENV=production npm run dist',
-            `NODE_ENV=production ./node_modules/.bin/build --windows --mac --linux --publish ${publish} --draft ${buildFlags}`
+            `NODE_ENV=production ./node_modules/.bin/build --windows --publish ${publish} --draft ${buildFlags}`
         ];
         const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
         if (!program.nosign) {
