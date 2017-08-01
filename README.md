@@ -9,8 +9,6 @@ Building is performed on macOS. Signing of Windows executables is delegated to a
 Installation
 ------------
 
-      npm install -g @peerio/desktop-release-builder
-
 ### Mac
 
 * Install Homebrew - https://brew.sh/
@@ -24,7 +22,7 @@ Installation
 * In Parallels, create a shared folder between Mac and Windows, for example,
   ~/Shared/ (and probably disable all other shared folders for security).
   VM Options > Sharing > Custom folders.
-* Open Terminal and type: `npm install -g ssh://git@github.com:PeerioTechnologies/desktop-release-builder.git`.
+* Open Terminal and type: `npm install -g @peerio/desktop-release-builder`.
 
 
 ### Windows (in Parallels)
@@ -33,9 +31,7 @@ Installation
 * Install node (latest, not LTS) - https://nodejs.org
 * Install Windows SDK - https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
 * XXX: install whatever drivers are needed for USB token.
-* "Node.js command prompt" and type `npm install -g ssh://git@github.com:PeerioTechnologies/desktop-release-builder.git`
-(Alternatively, transfer download this repository, transfer files to Windows,
-and type `npm install -g` inside the directory)
+* "Node.js command prompt" and type `npm install -g @peerio/desktop-release-builder`
 
 
 Dev notes
