@@ -74,8 +74,8 @@ async function uploadReleaseAsset(filePath, owner, repo, tag) {
         // upload this asset to all of them, since we don't know which
         // one was created by the current run of electron-builder.
         const { tag_name, id } = releases[i];
-        console.log(`Uploading ${name} to release (tag=${tag_name}, id = ${id})`);
         if (tag_name === tag) {
+            console.log(`Uploading ${name} to release (tag=${tag_name}, id = ${id})`);
             await github.repos.uploadAsset({ owner, repo, id, filePath, name });
         }
     }
