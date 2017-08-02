@@ -102,7 +102,7 @@ function watchDir(dir, fireInitially, cb) {
                 fs.stat(path.join(dir, filename), (err, stats) => {
                     if (err) {
                         // file probably disappeared, ignore it.
-                        fullfill();
+                        fulfill();
                     }
                     if (stats.isFile()) {
                         // Add file
