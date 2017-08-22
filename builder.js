@@ -32,6 +32,7 @@ program
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
     .option('-t --tag [name]', 'Tag (latest by default)')
     .option('-p --publish', 'Publish release')
+    .option('-P --platforms [list]', 'Comma-separated list of platforms (win,mac,linux)')
     .option('-a --prerelease', 'Mark as pre-release on GitHub')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides')
@@ -216,11 +217,12 @@ function buildRelease(dir, tag) {
     return new Promise((fulfill, reject) => {
         const buildFlags = program.prerelease ? '--prerelease' : '';
         const publish = program.publish ? 'always' : 'never';
+        const platforms = (program.platforms || 'windows,mac,linux').split(',').map(s => '--' + s.trim()).join(' ');
         const cmds = [
             'NODE_ENV=development npm install',
             'cd app && NODE_ENV=production npm install && cd ..',
             'NODE_ENV=production npm run dist',
-            `NODE_ENV=production ./node_modules/.bin/build --windows --mac --linux --publish ${publish} --draft ${buildFlags}`
+            `NODE_ENV=production ./node_modules/.bin/build ${platforms} --publish ${publish} --draft ${buildFlags}`
         ];
         const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
         if (!program.nosign) {
