@@ -200,6 +200,22 @@ function writeFile(filename, data) {
     });
 }
 
+/**
+ * Reads the contents of file.
+ *
+ * @param {string} filename
+ * @param {string} [encoding]
+ * @returns Promise<string | Buffer>
+ */
+function readFile(filename, encoding) {
+    return new Promise((fulfill, reject) => {
+        fs.readFile(filename, encoding, (err, data) => {
+            if (err) return reject(err);
+            fulfill(data);
+        });
+    });
+}
+
 module.exports = {
     Queue,
     criticalError,
@@ -208,5 +224,6 @@ module.exports = {
     watchDir,
     execp,
     getFileNames,
-    writeFile
+    writeFile,
+    readFile
 };

@@ -16,8 +16,9 @@ const https = require('https');
 const { spawn } = require('child_process');
 const rimraf = require('rimraf');
 const program = require('commander');
+const semver = require('semver-extra');
 const ManifestMaker = require('@peerio/update-maker');
-const { makeTempDir, criticalError, execp, getFileNames, writeFile } = require('./helpers');
+const { makeTempDir, criticalError, execp, getFileNames, writeFile, readFile } = require('./helpers');
 const { authenticate, downloadTagArchive, uploadReleaseAsset, getLatestTag } = require('./github');
 const { override } = require('./override');
 
@@ -30,12 +31,12 @@ program
     .usage('--shared <dir> --repository <repo> [--tag [name]] [--publish | --destination <dir>] [--key [filename]]')
     .option('-s --shared <dir>', 'Shared directory between macOS and Windows')
     .option('-r --repository <repo>', 'Repository in ORGANIZATION/REPO format ')
-    .option('-t --tag [name]', 'Tag (latest by default)')
+    .option('-t --tag [name]', 'Source tag or branch name (latest tag by default)')
     .option('-p --publish', 'Publish release')
     .option('-P --platforms [list]', 'Comma-separated list of platforms (win,mac,linux)')
     .option('-a --prerelease', 'Mark as pre-release on GitHub')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
-    .option('-o --overrides <repo>', 'Repository with overrides')
+    .option('-o --overrides <repo>', 'Repository with overrides (release will be published there)')
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .parse(process.argv);
@@ -118,7 +119,7 @@ async function main() {
 
         let manifestMaker;
         if (program.key) {
-            manifestMaker = new ManifestMaker(GITHUB_TAG, true); // XXX: all updates are currently mandatory
+            manifestMaker = new ManifestMaker();
             console.log('Unlocking peerio-updater key file');
             await manifestMaker.unlockKeyFile(program.key);
         } else {
@@ -131,9 +132,13 @@ async function main() {
         console.log(`Downloading release ${GITHUB_TAG}...`);
         const projectDir = await downloadTagArchive(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
 
+        const version = await readProjectVersion(projectDir);
+        manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
+        console.log(`Building version ${version}`);
+
         if (program.overrides) {
             // Apply overrides.
-            overridesDir = await applyOverrides(program.overrides, projectDir);
+            overridesDir = await applyOverrides(program.overrides, projectDir, version);
         }
 
         console.log(`Building release in ${projectDir}`);
@@ -156,7 +161,7 @@ async function main() {
             );
             if (program.publish) {
                 console.log('Uploading update manifest to GitHub release');
-                await uploadReleaseAsset(manifest, targetOwner, targetRepo, GITHUB_TAG);
+                await uploadReleaseAsset(manifest, targetOwner, targetRepo, version);
             }
         }
     } catch (ex) {
@@ -171,6 +176,26 @@ async function main() {
             console.log(`Build result is in ${newPath}`);
         }
     }
+}
+
+/**
+ * Extracts version number from project's package.json.
+ * Version is returned in "v1.0.0" format (with "v" prefix).
+ *
+ * @param {string} projectDir project directory (where package.json is)
+ * @returns Promise<string>
+ */
+function readProjectVersion(projectDir) {
+    const filename = path.join(projectDir, 'package.json');
+    return readFile(filename)
+        .then(JSON.parse)
+        .then(json => semver.valid(json.version))
+        .then(version => {
+            if (!version) {
+                throw new Error(`Invalid version in ${filename}`);
+            }
+            return 'v' + version;
+        });
 }
 
 /**
@@ -253,9 +278,10 @@ function buildRelease(dir, tag) {
  *
  * @param overridesRepo {string} github repository ORGANIZATION/REPO[#branch]
  * @param targetDir {string} target directory with Peerio desktop sources
+ * @param version {string} version to tag (e.g. "v1.0.0")
  * @returns {Promise<void>} temporary directory with cloned overrides repository
  */
-async function applyOverrides(overridesRepo, targetDir) {
+async function applyOverrides(overridesRepo, targetDir, version) {
     let tempDir;
     const [repo, branch] = splitRepoBranch(overridesRepo);
     try {
@@ -263,12 +289,9 @@ async function applyOverrides(overridesRepo, targetDir) {
         await execp(`git clone --depth=1 --branch=${branch} git@github.com:${repo}.git ${tempDir}`, tempDir);
         await override(tempDir, targetDir);
         if (program.publish) {
-            // Tag a new release in overrides repo and push the tag,
-            // but only if the tag starts with 'v#.' (e.g. v1.0.0)
-            if (/v\d+\./.test(GITHUB_TAG)) {
-                await execp(`git tag ${GITHUB_TAG}`, tempDir);
-                await execp(`git push --tags`, tempDir);
-            }
+            // Tag a new release in overrides repo and push the tag.
+            await execp(`git tag ${version}`, tempDir);
+            await execp(`git push --tags`, tempDir);
         }
     } catch (ex) {
         if (tempDir) rimraf.sync(tempDir);
