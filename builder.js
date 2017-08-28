@@ -142,7 +142,7 @@ async function main() {
         }
 
         console.log(`Building release in ${projectDir}`);
-        await buildRelease(projectDir, GITHUB_TAG);
+        await buildRelease(projectDir);
 
         if (manifestMaker) {
             // Get correct target repository where the update is published.
@@ -235,10 +235,9 @@ function makeUpdaterManifest(m, dir, owner, repo) {
 /**
  * Builds release in the project directory.
  * @param {string} dir project directory
- * @param {string} tag git tag
  * @returns Promise<void>
  */
-function buildRelease(dir, tag) {
+function buildRelease(dir) {
     return new Promise((fulfill, reject) => {
         const buildFlags = program.prerelease ? '--prerelease' : '';
         const publish = program.publish ? 'always' : 'never';
