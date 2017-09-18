@@ -251,7 +251,7 @@ function buildRelease(dir) {
         const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
         if (!program.nosign) {
             env.SHARED_DIR = SHARED_DIR;
-            env.SIGNTOOL_TIMEOUT = '1200000'; // 20 minutes
+            env.SIGNTOOL_TIMEOUT = '432000000'; // 2000 minutes
             env.SIGNTOOL_PATH = path.join(__dirname, 'osslsigncode.js');
             env.WIN_CSC_LINK = 'ZmFrZWNlcnQ='; // any b64 string to trick builder into performing Windows codesigning
         }
