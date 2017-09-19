@@ -135,7 +135,9 @@ async function main() {
         const projectDir = await downloadTagArchive(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
 
         const version = await readProjectVersion(projectDir);
-        manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
+        if (manifestMaker) {
+            manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
+        }
         console.log(`Building version ${version}`);
 
         if (program.overrides) {
