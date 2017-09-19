@@ -73,7 +73,9 @@ if (!GITHUB_AUTH_TOKEN && program.publish) {
     process.exit(2);
 }
 
-authenticate(GITHUB_AUTH_TOKEN);
+if (GITHUB_AUTH_TOKEN) {
+    authenticate(GITHUB_AUTH_TOKEN);
+}
 
 
 // Check that in/out directories exist.
