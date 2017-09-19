@@ -65,7 +65,7 @@ const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
 let GITHUB_TAG = program.tag;
 
 const GITHUB_AUTH_TOKEN = process.env.GH_TOKEN;
-if (!GITHUB_AUTH_TOKEN) {
+if (!GITHUB_AUTH_TOKEN && program.publish) {
     console.error(
         'Please set GH_TOKEN environment variable to the correct GitHub ' +
         'authentication token that has access to the given project'
