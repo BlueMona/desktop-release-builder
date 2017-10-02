@@ -247,8 +247,7 @@ function buildRelease(dir) {
         const publish = program.publish ? 'always' : 'never';
         const platforms = (program.platforms || 'windows,mac,linux').split(',').map(s => '--' + s.trim()).join(' ');
         const cmds = [
-            'NODE_ENV=development npm install',
-            'cd app && NODE_ENV=production npm install && cd ..',
+            'npm install',
             'NODE_ENV=production npm run dist',
             `NODE_ENV=production ./node_modules/.bin/build ${platforms} --publish ${publish} --draft ${buildFlags}`
         ];
