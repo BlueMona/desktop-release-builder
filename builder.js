@@ -59,7 +59,7 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
-const RELEASE_OVERRIDES_DIR = 'release-overrides';
+const RELEASE_OVERRIDES_DIR = 'release';
 
 // Get input and output directory.
 const SHARED_DIR = program.shared;
@@ -145,7 +145,7 @@ async function main() {
         // Apply release overrides.
         console.log(`Applying overrides from ${RELEASE_OVERRIDES_DIR}`)
         await override(projectDir, projectDir, {
-            fileOverridesDir: RELEASE_OVERRIDES_DIR
+            jsonOverridesFile: path.join(RELEASE_OVERRIDES_DIR, 'json-overrides.json'),
         });
 
         if (program.overrides) {
