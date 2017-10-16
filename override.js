@@ -35,31 +35,35 @@ if (require.main === module) {
         });
 }
 
-function override(srcDir, dstDir) {
-    // Merge json overrides.
-    let jsonOverridesPath = path.join(srcDir, 'json-overrides.json');
-    if (jsonOverridesPath[0] !== "/") {
-        jsonOverridesPath = "./" + jsonOverridesPath;
-    }
-    const jsonOverrides = require(jsonOverridesPath);
-    Object.keys(jsonOverrides).forEach(filename => {
-        const filepath = path.join(dstDir, filename);
-        const target = JSON.parse(fs.readFileSync(filepath, "utf8"));
-        merge(target, jsonOverrides[filename]);
-        fs.writeFileSync(filepath, JSON.stringify(target, null, "  "));
-        console.log(`JSON merged: ${filename}`)
-    });
-
-    // Merge file trees.
-    const fileOverridesPath = path.join(srcDir, 'file-overrides');
-    return copy(fileOverridesPath, dstDir, {
-        overwrite: true,
-        dot: true
-    }).then(results => {
-        results.forEach(file => {
-            console.log(`File copied: ${file.dest.substring(dstDir.length)}`);
+function override(srcDir, dstDir, cfg) {
+    if (cfg.jsonOverridesFile) {
+        // Merge json overrides.
+        let jsonOverridesPath = path.join(srcDir, cfg.jsonOverridesFile);
+        if (jsonOverridesPath[0] !== "/") {
+            jsonOverridesPath = "./" + jsonOverridesPath;
+        }
+        const jsonOverrides = require(jsonOverridesPath);
+        Object.keys(jsonOverrides).forEach(filename => {
+            const filepath = path.join(dstDir, filename);
+            const target = JSON.parse(fs.readFileSync(filepath, "utf8"));
+            merge(target, jsonOverrides[filename]);
+            fs.writeFileSync(filepath, JSON.stringify(target, null, "  "));
+            console.log(`JSON merged: ${filename}`)
         });
-    });
+    }
+
+    if (cfg.fileOverridesDir) {
+        // Merge file trees.
+        const fileOverridesPath = path.join(srcDir, cfg.fileOverridesDir);
+        return copy(fileOverridesPath, dstDir, {
+            overwrite: true,
+            dot: true
+        }).then(results => {
+            results.forEach(file => {
+                console.log(`File copied: ${file.dest.substring(dstDir.length)}`);
+            });
+        });
+    }
 }
 
 module.exports = {

@@ -59,6 +59,8 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
+const RELEASE_OVERRIDES_DIR = 'release-overrides';
+
 // Get input and output directory.
 const SHARED_DIR = program.shared;
 const [GITHUB_OWNER, GITHUB_REPO] = program.repository.split('/');
@@ -140,8 +142,15 @@ async function main() {
         }
         console.log(`Building version ${version}`);
 
+        // Apply release overrides.
+        console.log(`Applying overrides from ${RELEASE_OVERRIDES_DIR}`)
+        await override(projectDir, projectDir, {
+            fileOverridesDir: RELEASE_OVERRIDES_DIR
+        });
+
         if (program.overrides) {
-            // Apply overrides.
+            // Apply overrides from a "whitelabel" repo.
+            console.log(`Applying overrides from repository ${program.overrides}`);
             overridesDir = await applyOverrides(program.overrides, projectDir, version);
         }
 
@@ -289,7 +298,10 @@ async function applyOverrides(overridesRepo, targetDir, version) {
     try {
         tempDir = await makeTempDir();
         await execp(`git clone --depth=1 --branch=${branch} git@github.com:${repo}.git ${tempDir}`, tempDir);
-        await override(tempDir, targetDir);
+        await override(tempDir, targetDir, {
+            jsonOverridesFile: 'json-overrides.json',
+            fileOverridesDir: 'file-overrides'
+        });
         if (program.publish) {
             // Tag a new release in overrides repo and push the tag.
             await execp(`git tag ${version}`, tempDir);
