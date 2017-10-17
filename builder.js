@@ -48,7 +48,7 @@ if ((!program.shared && !program.nosign) || !program.repository) {
 
 if ((!program.publish && !program.destination) ||
     (program.publish && program.destination)) {
-    console.log('Error: either --publish or --dest flag required, but not both.')
+    console.log('Error: either --publish or --destination flag required, but not both.')
     program.outputHelp();
     process.exit(1);
 }
