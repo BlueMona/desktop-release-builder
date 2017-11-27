@@ -18,7 +18,7 @@
     "github": "9.2.0",
     "lodash": "^4.17.4",
     "mkdirp": "0.5.1",
-    "@peerio/update-maker": "1.0.2",
+    "@peerio/update-maker": "1.1.0",
     "recursive-copy": "2.0.6",
     "rimraf": "^2.6.1",
     "semver-extra": "^2.0.1"
