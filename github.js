@@ -104,10 +104,31 @@ function getLatestTag(owner, repo) {
         .then(versions => 'v' + semver.valid(semver.max(versions)));
 }
 
+/**
+ * Returns commit SHA corresponding to the given tag or branch.
+ *
+ * @param {string} owner
+ * @param {string} repo
+ * @param {string} tagOrBranch
+ */
+function getCommitSHA(owner, repo, tagOrBranch) {
+    // GitHub requires different requests depending on whether we want
+    // info on tag or branch. We first try branch, then if it fails, try tag.
+    return github.gitdata.getReference({ owner, repo, ref: `heads/${tagOrBranch}` })
+        .catch(() => github.gitdata.getReference({ owner, repo, ref: `tags/${tagOrBranch}` }))
+        .then(res => {
+            const sha = res.data.object.sha;
+            if (!sha) throw new Error('SHA for ref not found');
+            return sha;
+        });
+}
+
+
 
 module.exports = {
     authenticate,
     downloadTagArchive,
     uploadReleaseAsset,
-    getLatestTag
+    getLatestTag,
+    getCommitSHA
 };

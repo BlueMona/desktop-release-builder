@@ -19,7 +19,7 @@ const program = require('commander');
 const semver = require('semver-extra');
 const ManifestMaker = require('@peerio/update-maker');
 const { makeTempDir, criticalError, execp, getFileNames, writeFile, readFile } = require('./helpers');
-const { authenticate, downloadTagArchive, uploadReleaseAsset, getLatestTag } = require('./github');
+const { authenticate, downloadTagArchive, uploadReleaseAsset, getLatestTag, getCommitSHA } = require('./github');
 const { override } = require('./override');
 
 if (process.platform !== 'darwin') {
@@ -39,6 +39,7 @@ program
     .option('-o --overrides <repo>', 'Repository with overrides (release will be published there)')
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
+    .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -55,6 +56,12 @@ if ((!program.publish && !program.destination) ||
 
 if (program.shared && program.nosign) {
     console.log('Error: either --shared or --nosign flag required, but not both.')
+    program.outputHelp();
+    process.exit(1);
+}
+
+if (process.versioning && !process.overrides) {
+    console.log('Error: --versioning requires --overrides.')
     program.outputHelp();
     process.exit(1);
 }
@@ -140,7 +147,7 @@ async function main() {
         if (manifestMaker) {
             manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
         }
-        console.log(`Building version ${version}`);
+        console.log(`Building from version ${version}`);
 
         // Apply release overrides.
         console.log(`Applying overrides from ${RELEASE_OVERRIDES_DIR}`)
@@ -302,6 +309,10 @@ async function applyOverrides(overridesRepo, targetDir, version) {
             jsonOverridesFile: 'json-overrides.json',
             fileOverridesDir: 'file-overrides'
         });
+        if (program.versioning) {
+            version = await applyCustomVersioning(overridesRepo, targetDir, version);
+            console.log(`Custom version: ${version}`)
+        }
         if (program.publish) {
             // Tag a new release in overrides repo and push the tag.
             await execp(`git tag ${version}`, tempDir);
@@ -312,6 +323,70 @@ async function applyOverrides(overridesRepo, targetDir, version) {
         criticalError(ex);
     }
 }
+
+async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) {
+    // Get commit SHA corresponding to branch/tag in the original repo
+    const sha = await getCommitSHA(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG);
+
+    // Get lastest version (tag) of the overrides repo.
+    const [overOwner, overRepo] = overridesRepo.split('/');
+    let latestOverridesVersion;
+    try {
+        latestOverridesVersion = await getLatestTag(overOwner, overRepo);
+        // Strip everything any extra info, we need just numbers
+        // v1.2.3-whatever+yyy -> 1.2.3
+        latestOverridesVersion = semver.valid(latestOverridesVersion).replace(/-.*$/, '');
+    } catch (e) {
+        // TODO: distinguish between no tags and network failure.
+        // For now, assume we have no tags in the repo.
+        latestOverridesVersion = '0.0.0';
+    }
+
+    // If original version is greater than latest overrides version,
+    // use original version, otherwise use overrides version with
+    // incremented patch number.
+    //
+    //  Examples:
+    //
+    //   original : 1.0.0
+    //   overrides: 1.0.0
+    //    --> new : 1.0.1
+    //
+    //   or
+    //
+    //   original : 1.2.0
+    //   overrides: 1.0.0
+    //     --> new: 1.2.0
+    //
+    let version;
+    if (semver.gt(originalVersion, latestOverridesVersion)) {
+        version = originalVersion.replace(/-.*$/, ''); // removing extra info just in case
+    } else {
+        version = semver.inc(latestOverridesVersion, 'patch');
+    }
+    // Add extra info/metadata to version
+    version += `-${program.versioning}+${sha}`;
+
+    // Set this version in package.json in the target dir.
+    const packageJSON = path.join(targetDir, 'package.json');
+    const appPackageJSON = path.join(targetDir, 'app', 'package.json');
+     // Update package.json
+    return readFile(packageJSON)
+        .then(JSON.parse)
+        .then(json => Object.assign(json, { version }))
+        .then(json => JSON.stringify(json, undefined, 2))
+        .then(s => writeFile(packageJSON, s))
+         // Update app/package.json
+        .then(() => readFile(appPackageJSON))
+        .then(JSON.parse)
+        .then(json => Object.assign(json, { version }))
+        .then(json => JSON.stringify(json, undefined, 2))
+        .then(s => writeFile(appPackageJSON, s))
+        // Return version in vX.Y.Z... format
+        .then(() => 'v' + version);
+}
+
+
 
 /**
  * Extracts repo and branch name from repo url:
