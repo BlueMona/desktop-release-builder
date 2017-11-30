@@ -364,7 +364,7 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
         version = semver.inc(latestOverridesVersion, 'patch');
     }
     // Add extra info/metadata to version
-    version += `-${program.versioning}+${sha}`;
+    version += `-${program.versioning}`;
 
     // Set this version in package.json in the target dir.
     const packageJSON = path.join(targetDir, 'package.json');
@@ -378,7 +378,11 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
          // Update app/package.json
         .then(() => readFile(appPackageJSON))
         .then(JSON.parse)
-        .then(json => Object.assign(json, { version }))
+        .then(json => {
+            json.version = version;
+            json.peerio.commit = sha;
+            return json;
+        })
         .then(json => JSON.stringify(json, undefined, 2))
         .then(s => writeFile(appPackageJSON, s))
         // Return version in vX.Y.Z... format
