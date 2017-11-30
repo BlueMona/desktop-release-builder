@@ -143,10 +143,7 @@ async function main() {
         console.log(`Downloading release ${GITHUB_TAG}...`);
         const projectDir = await downloadTagArchive(GITHUB_OWNER, GITHUB_REPO, GITHUB_TAG, sourceTempDir);
 
-        const version = await readProjectVersion(projectDir);
-        if (manifestMaker) {
-            manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
-        }
+        let version = await readProjectVersion(projectDir);
         console.log(`Building from version ${version}`);
 
         // Apply release overrides.
@@ -158,13 +155,14 @@ async function main() {
         if (program.overrides) {
             // Apply overrides from a "whitelabel" repo.
             console.log(`Applying overrides from repository ${program.overrides}`);
-            overridesDir = await applyOverrides(program.overrides, projectDir, version);
+            version = await applyOverrides(program.overrides, projectDir, version);
         }
 
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir);
 
         if (manifestMaker) {
+            manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
             // Get correct target repository where the update is published.
             const target = program.overrides
                 ? splitRepoBranch(program.overrides)[0]
@@ -297,7 +295,7 @@ function buildRelease(dir) {
  * @param overridesRepo {string} github repository ORGANIZATION/REPO[#branch]
  * @param targetDir {string} target directory with Peerio desktop sources
  * @param version {string} version to tag (e.g. "v1.0.0")
- * @returns {Promise<void>} temporary directory with cloned overrides repository
+ * @returns {Promise<string>} version (may change from the given)
  */
 async function applyOverrides(overridesRepo, targetDir, version) {
     let tempDir;
@@ -318,6 +316,7 @@ async function applyOverrides(overridesRepo, targetDir, version) {
             await execp(`git tag ${version}`, tempDir);
             await execp(`git push --tags`, tempDir);
         }
+        return version;
     } catch (ex) {
         if (tempDir) rimraf.sync(tempDir);
         criticalError(ex);
