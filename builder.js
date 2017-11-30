@@ -360,7 +360,7 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
     //
     let version;
     if (semver.gt(originalVersion, latestOverridesVersion)) {
-        version = originalVersion.replace(/-.*$/, ''); // removing extra info just in case
+        version = semver.valid(originalVersion).replace(/-.*$/, ''); // removing extra info just in case
     } else {
         version = semver.inc(latestOverridesVersion, 'patch');
     }
