@@ -11,13 +11,6 @@ Installation
 
 ### Mac
 
-* Install Homebrew - https://brew.sh/
-* In Terminal:
-
-      brew install wine --without-x11
-      brew install mono
-      brew install gnu-tar graphicsmagick xz
-
 * Install Parallels with Windows 10.
 * In Parallels, create a shared folder between Mac and Windows, for example,
   ~/Shared/ (and probably disable all other shared folders for security).
