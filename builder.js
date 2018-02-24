@@ -239,6 +239,8 @@ function makeUpdaterManifest(m, dir, owner, repo) {
                 platform = 'windows';
             } else if (/64\.AppImage$/i.test(name)) {
                 platform = 'linux-x64';
+            } else if (/armv7l\.AppImage$/i.test(name)) {
+                platform = 'linux-armv7l';
             } else {
                 return; // skip this file
             }
