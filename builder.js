@@ -40,7 +40,7 @@ program
     .option('-t --tag [name]', 'Source tag or branch name (latest tag by default)')
     .option('-p --publish', 'Publish release')
     .option('-P --platforms [list]', 'Comma-separated list of platforms (win,mac,linux)')
-    .option('-a --prerelease', 'Mark as pre-release on GitHub')
+    .option('-a --prerelease', 'Mark as pre-release on GitHub (if not set, marked as draft)')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
     .option('-o --overrides <repo>', 'Repository with overrides (release will be published there)')
     .option('-n --nosign', 'Do not sign Windows release')
@@ -272,13 +272,13 @@ function makeUpdaterManifest(m, dir, owner, repo) {
  */
 function buildRelease(dir) {
     return new Promise((fulfill, reject) => {
-        const buildFlags = program.prerelease ? '--prerelease' : '';
+        const buildFlagsEnv = program.prerelease ? 'EP_PRELEASE=true' : 'EP_DRAFT=true';
         const publish = program.publish ? 'always' : 'never';
         const platforms = (program.platforms || 'windows,mac,linux').split(',').map(s => '--' + s.trim()).join(' ');
         const cmds = [
             'NODE_ENV=development npm install',
             'NODE_ENV=production npm run dist',
-            `NODE_ENV=production ./node_modules/.bin/build ${platforms} --publish ${publish} --draft ${buildFlags}`
+            `NODE_ENV=production ${buildFlagsEnv} ./node_modules/.bin/build ${platforms} --publish ${publish}`
         ];
         const env = Object.assign({}, process.env, { GH_TOKEN: GITHUB_AUTH_TOKEN });
         if (!program.nosign) {
