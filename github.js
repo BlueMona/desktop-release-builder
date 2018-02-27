@@ -96,7 +96,7 @@ async function deleteReleaseAssets(nameRegexp, owner, repo, tag) {
     for (let i = 0; i < releases.length; i++) {
         // I think there can be multiple draft releases assigned to
         // the same tag (until they are published), so we want to
-        // upload this asset to all of them, since we don't know which
+        // delete this asset from all of them, since we don't know which
         // one was created by the current run of electron-builder.
         const { tag_name, id, assets } = releases[i];
         if (tag_name !== tag) {
