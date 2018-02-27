@@ -82,6 +82,37 @@ async function uploadReleaseAsset(filePath, owner, repo, tag) {
 }
 
 /**
+ * Deletes assets (files) matching the given RegExp from the release.
+ *
+ * @param {RegExp} nameRegexp regex to match asset name for deletion
+ * @param {string} owner
+ * @param {string} owner project owner ("org" from github.com/org/repo)
+ * @param {string} repo project repository ("repo" from github.com/org/repo)
+ * @param {string} tag git tag
+ * @returns Promise<void>
+ */
+async function deleteReleaseAssets(nameRegexp, owner, repo, tag) {
+    const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
+    for (let i = 0; i < releases.length; i++) {
+        // I think there can be multiple draft releases assigned to
+        // the same tag (until they are published), so we want to
+        // upload this asset to all of them, since we don't know which
+        // one was created by the current run of electron-builder.
+        const { tag_name, id, assets } = releases[i];
+        if (tag_name !== tag) {
+            continue;
+        }
+        for (let j = 0; i < assets.length; i++) {
+            const file = assets[j];
+            if (nameRegexp.test(file.name)) {
+                console.log(`Deleting ${file.name} from release (tag=${tag_name}, id = ${id})`);
+                await github.repos.deleteAsset({ owner, repo, id: file.id });
+            }
+        }
+    }
+}
+
+/**
  * Returns a list of tags.
  *
  * @param owner
@@ -129,6 +160,7 @@ module.exports = {
     authenticate,
     downloadTagArchive,
     uploadReleaseAsset,
+    deleteReleaseAssets,
     getLatestTag,
     getCommitSHA
 };

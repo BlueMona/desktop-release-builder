@@ -18,8 +18,14 @@ const rimraf = require('rimraf');
 const program = require('commander');
 const semver = require('semver-extra');
 const ManifestMaker = require('@peerio/update-maker');
-const { makeTempDir, criticalError, execp, getFileNames, writeFile, readFile } = require('./helpers');
-const { authenticate, downloadTagArchive, uploadReleaseAsset, getLatestTag, getCommitSHA } = require('./github');
+const {
+    makeTempDir, criticalError, execp,
+    getFileNames, writeFile, readFile
+} = require('./helpers');
+const {
+    authenticate, downloadTagArchive, uploadReleaseAsset,
+    deleteReleaseAssets, getLatestTag, getCommitSHA
+} = require('./github');
 const { override } = require('./override');
 
 if (process.platform !== 'darwin') {
@@ -60,13 +66,16 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
-if (process.versioning && !process.overrides) {
+if (program.versioning && !program.overrides) {
     console.log('Error: --versioning requires --overrides.')
     program.outputHelp();
     process.exit(1);
 }
 
 const RELEASE_OVERRIDES_DIR = 'release';
+
+/* RegExp for files to delete from release after uploading */
+const FILES_TO_DELETE = /^(latest(.*)\.(yml|json))|((.*)\.blockmap)$/;
 
 // Get input and output directory.
 const SHARED_DIR = program.shared;
@@ -161,15 +170,15 @@ async function main() {
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir);
 
+        const target = program.overrides
+            ? splitRepoBranch(program.overrides)[0]
+            : program.repository;
+
+        const [targetOwner, targetRepo] = target.split('/');
+
         if (manifestMaker) {
             manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
             // Get correct target repository where the update is published.
-            const target = program.overrides
-                ? splitRepoBranch(program.overrides)[0]
-                : program.repository;
-
-            const [targetOwner, targetRepo] = target.split('/');
-
             console.log(`Making update manifest`);
             const manifest = await makeUpdaterManifest(
                 manifestMaker,
@@ -181,6 +190,11 @@ async function main() {
                 console.log('Uploading update manifest to GitHub release');
                 await uploadReleaseAsset(manifest, targetOwner, targetRepo, version);
             }
+        }
+
+        if (program.publish) {
+            console.log('Deleting unnecessary files from release');
+            await deleteReleaseAssets(FILES_TO_DELETE, targetOwner, targetRepo, version);
         }
     } catch (ex) {
         criticalError(ex);
@@ -224,7 +238,6 @@ function readProjectVersion(projectDir) {
  * @param {string} dir project directory
  * @param {string} owner project owner ("org" from github.com/org/repo)
  * @param {string} repo project repository ("repo" from github.com/org/repo)
- * @param {string} tag git tag
  * @returns Promise<string> manifest file path
  */
 function makeUpdaterManifest(m, dir, owner, repo) {
@@ -371,13 +384,13 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
     // Set this version in package.json in the target dir.
     const packageJSON = path.join(targetDir, 'package.json');
     const appPackageJSON = path.join(targetDir, 'app', 'package.json');
-     // Update package.json
+    // Update package.json
     return readFile(packageJSON)
         .then(JSON.parse)
         .then(json => Object.assign(json, { version }))
         .then(json => JSON.stringify(json, undefined, 2))
         .then(s => writeFile(packageJSON, s))
-         // Update app/package.json
+        // Update app/package.json
         .then(() => readFile(appPackageJSON))
         .then(JSON.parse)
         .then(json => {
