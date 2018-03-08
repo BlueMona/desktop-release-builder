@@ -1,7 +1,7 @@
 // @ts-check
 const path = require('path');
 const semver = require('semver-extra');
-const GitHubAPI = require('github');
+const GitHubAPI = require('@octokit/rest');
 const download = require('download');
 
 const github = new GitHubAPI({
