@@ -188,7 +188,7 @@ async function main() {
             );
             if (program.publish) {
                 console.log('Uploading update manifest to GitHub release');
-                await uploadReleaseAsset(manifest, targetOwner, targetRepo, version);
+                await uploadReleaseAsset(manifest, 'text/plain', targetOwner, targetRepo, version);
             }
         }
 

@@ -1,5 +1,6 @@
 // @ts-check
 const path = require('path');
+const fs = require('fs');
 const semver = require('semver-extra');
 const GitHubAPI = require('@octokit/rest');
 const download = require('download');
@@ -9,7 +10,8 @@ const github = new GitHubAPI({
     host: "api.github.com",
     headers: {
         "user-agent": "peerio-release-builder"
-    }
+    },
+    agent: undefined
 });
 
 let authToken = '';
@@ -61,22 +63,30 @@ function downloadTagArchive(owner, repo, tag, dest) {
  * @param {string} tag git tag
  * @returns Promise<void>
  */
-async function uploadReleaseAsset(filePath, owner, repo, tag) {
+async function uploadReleaseAsset(filePath, contentType, owner, repo, tag) {
     // Can't get release by tag name, because draft releases are
     // not assigned to any tag. Thus we fetch one page of releases,
     // hoping that the one we publish is in there, and lookup release id
     // by tag_name.
     const name = path.basename(filePath); // TODO: sanitize for GitHub
+    const contentLength = fs.statSync(filePath).size;
+
     const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
     for (let i = 0; i < releases.length; i++) {
         // I think there can be multiple draft releases assigned to
         // the same tag (until they are published), so we want to
         // upload this asset to all of them, since we don't know which
         // one was created by the current run of electron-builder.
-        const { tag_name, id } = releases[i];
+        const { tag_name, upload_url } = releases[i];
         if (tag_name === tag) {
-            console.log(`Uploading ${name} to release (tag=${tag_name}, id = ${id})`);
-            await github.repos.uploadAsset({ owner, repo, id, filePath, name });
+            console.log(`Uploading ${name} to release (tag=${tag_name})`);
+            await github.repos.uploadAsset({
+                url: upload_url,
+                file: fs.createReadStream('filePath'),
+                contentType,
+                contentLength,
+                name
+            });
         }
     }
 }
