@@ -1,6 +1,6 @@
 {
   "name": "@peerio/desktop-release-builder",
-  "version": "6.9.3",
+  "version": "6.9.4",
   "description": "Makes signed Peerio Desktop releases",
   "main": "index.js",
   "bin": {
