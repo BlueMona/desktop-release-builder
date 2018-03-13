@@ -82,7 +82,7 @@ async function uploadReleaseAsset(filePath, contentType, owner, repo, tag) {
             console.log(`Uploading ${name} to release (tag=${tag_name})`);
             await github.repos.uploadAsset({
                 url: upload_url,
-                file: fs.createReadStream('filePath'),
+                file: fs.createReadStream(filePath),
                 contentType,
                 contentLength,
                 name
