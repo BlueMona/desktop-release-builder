@@ -46,6 +46,7 @@ program
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
+    .option('-m --mandatory', 'Update is mandatory')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -177,7 +178,7 @@ async function main() {
         const [targetOwner, targetRepo] = target.split('/');
 
         if (manifestMaker) {
-            manifestMaker.setVersion(version, true);  // XXX: all updates are currently mandatory
+            manifestMaker.setVersion(version, !!program.mandatory);
             // Get correct target repository where the update is published.
             console.log(`Making update manifest`);
             const manifest = await makeUpdaterManifest(
