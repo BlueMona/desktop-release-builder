@@ -46,7 +46,7 @@ program
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
-    .option('-m --mandatory', 'Update is mandatory')
+    .option('-O --optional <lastMandatoryVersion>', 'Update is optional since the specified version')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -56,19 +56,25 @@ if ((!program.shared && !program.nosign) || !program.repository) {
 
 if ((!program.publish && !program.destination) ||
     (program.publish && program.destination)) {
-    console.log('Error: either --publish or --destination flag required, but not both.')
+    console.error('Error: either --publish or --destination flag required, but not both.')
     program.outputHelp();
     process.exit(1);
 }
 
 if (program.shared && program.nosign) {
-    console.log('Error: either --shared or --nosign flag required, but not both.')
+    console.error('Error: either --shared or --nosign flag required, but not both.')
     program.outputHelp();
     process.exit(1);
 }
 
 if (program.versioning && !program.overrides) {
-    console.log('Error: --versioning requires --overrides.')
+    console.error('Error: --versioning requires --overrides.')
+    program.outputHelp();
+    process.exit(1);
+}
+
+if (program.optional && !semver.valid(program.optional)) {
+    console.error('Eror: --optional argument expects correct last mandatory version.');
     program.outputHelp();
     process.exit(1);
 }
@@ -178,7 +184,10 @@ async function main() {
         const [targetOwner, targetRepo] = target.split('/');
 
         if (manifestMaker) {
-            manifestMaker.setVersion(version, !!program.mandatory);
+            manifestMaker.setVersion(version);
+            if (program.optional) {
+                manifestMaker.setOptionalSince(program.optional);
+            }
             // Get correct target repository where the update is published.
             console.log(`Making update manifest`);
             const manifest = await makeUpdaterManifest(
