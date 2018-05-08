@@ -46,7 +46,6 @@ program
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
-    .option('-O --optional <lastMandatoryVersion>', 'Update is optional since the specified version')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -69,12 +68,6 @@ if (program.shared && program.nosign) {
 
 if (program.versioning && !program.overrides) {
     console.error('Error: --versioning requires --overrides.')
-    program.outputHelp();
-    process.exit(1);
-}
-
-if (program.optional && !semver.valid(program.optional)) {
-    console.error('Eror: --optional argument expects correct last mandatory version.');
     program.outputHelp();
     process.exit(1);
 }
@@ -185,8 +178,9 @@ async function main() {
 
         if (manifestMaker) {
             manifestMaker.setVersion(version);
-            if (program.optional) {
-                manifestMaker.setOptionalSince(program.optional);
+            const lastMandatoryUpdateVersion = await readLastMandatoryUpdateVersion(projectDir);
+            if (lastMandatoryUpdateVersion && version !== lastMandatoryUpdateVersion) {
+                manifestMaker.setOptionalSince(lastMandatoryUpdateVersion);
             }
             // Get correct target repository where the update is published.
             console.log(`Making update manifest`);
@@ -238,6 +232,19 @@ function readProjectVersion(projectDir) {
             }
             return 'v' + version;
         });
+}
+
+/**
+ * Extracts last mandatory update version from project's package.json.
+ * Returns version in "1.0.0" format or null if it's not specified.
+ *
+ * @param {string} projectDir
+ */
+function readLastMandatoryUpdateVersion(projectDir) {
+    const filename = path.join(projectDir, 'package.json');
+    return readFile(filename)
+        .then(JSON.parse)
+        .then(json => semver.valid(json.lastMandatoryUpdateVersion));
 }
 
 /**
