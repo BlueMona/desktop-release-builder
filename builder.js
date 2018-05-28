@@ -179,7 +179,12 @@ async function main() {
         if (manifestMaker) {
             manifestMaker.setVersion(version);
             const lastMandatoryUpdateVersion = await readLastMandatoryUpdateVersion(projectDir);
-            if (lastMandatoryUpdateVersion && semver.valid(version) !== semver.valid(lastMandatoryUpdateVersion)) {
+            if (lastMandatoryUpdateVersion &&
+                semver.neq(
+                    semver.valid(version).replace(/-.*$/, ''),
+                    semver.valid(lastMandatoryUpdateVersion).replace(/-.*$/, '')
+                ))
+            {
                 manifestMaker.setOptionalSince(lastMandatoryUpdateVersion);
             }
             // Get correct target repository where the update is published.
