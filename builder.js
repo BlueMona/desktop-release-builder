@@ -42,7 +42,7 @@ program
     .option('-P --platforms [list]', 'Comma-separated list of platforms (win,mac,linux)')
     .option('-a --prerelease', 'Mark as pre-release on GitHub (if not set, marked as draft)')
     .option('-d --destination <dir>', 'Destination directory for build results (without --publish)')
-    .option('-o --overrides <repo>', 'Repository with overrides (release will be published there)')
+    .option('-o --overrides <repolist>', 'Repositories with overrides (comma-separated, release will be published in the last one)', s => s.split(','))
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
     .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
@@ -66,7 +66,7 @@ if (program.shared && program.nosign) {
     process.exit(1);
 }
 
-if (program.versioning && !program.overrides) {
+if (program.versioning && (!program.overrides || program.overrides.length === 0)) {
     console.error('Error: --versioning requires --overrides.')
     program.outputHelp();
     process.exit(1);
@@ -161,10 +161,15 @@ async function main() {
             jsonOverridesFile: path.join(RELEASE_OVERRIDES_DIR, 'json-overrides.json'),
         });
 
-        if (program.overrides) {
+        if (program.overrides && program.overrides.length > 0) {
             // Apply overrides from a "whitelabel" repo.
-            console.log(`Applying overrides from repository ${program.overrides}`);
-            version = await applyOverrides(program.overrides, projectDir, version);
+            for (let i = 0; i < program.overrides.length; i++) {
+                console.log(`Applying overrides from repository ${program.overrides[i]}`);
+                const isLast = (i === program.overrides.length - 1);
+                version = await applyOverrides(program.overrides[i], projectDir, version, isLast);
+                if (isLast) {
+                    console.log(`Release will be published at ${program.overrides[i]}`)
+                }
         }
 
         console.log(`Building release in ${projectDir}`);
@@ -332,9 +337,10 @@ function buildRelease(dir) {
  * @param overridesRepo {string} github repository ORGANIZATION/REPO[#branch]
  * @param targetDir {string} target directory with Peerio desktop sources
  * @param version {string} version to tag (e.g. "v1.0.0")
+ * @param isLast {boolean} if true, the override is last in the list and versioning will be applied
  * @returns {Promise<string>} version (may change from the given)
  */
-async function applyOverrides(overridesRepo, targetDir, version) {
+async function applyOverrides(overridesRepo, targetDir, version, isLast) {
     let tempDir;
     const [repo, branch] = splitRepoBranch(overridesRepo);
     try {
@@ -344,14 +350,16 @@ async function applyOverrides(overridesRepo, targetDir, version) {
             jsonOverridesFile: 'json-overrides.json',
             fileOverridesDir: 'file-overrides'
         });
-        if (program.versioning) {
-            version = await applyCustomVersioning(overridesRepo, targetDir, version);
-            console.log(`Custom version: ${version}`)
-        }
-        if (program.publish) {
-            // Tag a new release in overrides repo and push the tag.
-            await execp(`git tag ${version}`, tempDir);
-            await execp(`git push --tags`, tempDir);
+        if (isLast) {
+            if (program.versioning) {
+                version = await applyCustomVersioning(overridesRepo, targetDir, version);
+                console.log(`Custom version: ${version}`)
+            }
+            if (program.publish) {
+                // Tag a new release in overrides repo and push the tag.
+                await execp(`git tag ${version}`, tempDir);
+                await execp(`git push --tags`, tempDir);
+            }
         }
         return version;
     } catch (ex) {
