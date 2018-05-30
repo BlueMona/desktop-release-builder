@@ -170,6 +170,7 @@ async function main() {
                 if (isLast) {
                     console.log(`Release will be published at ${program.overrides[i]}`)
                 }
+            }
         }
 
         console.log(`Building release in ${projectDir}`);
