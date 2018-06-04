@@ -176,8 +176,12 @@ async function main() {
         console.log(`Building release in ${projectDir}`);
         await buildRelease(projectDir);
 
-        const target = program.overrides
-            ? splitRepoBranch(program.overrides)[0]
+        const lastOverride = program.overrides
+            ? program.overrides[program.overrides.length - 1]
+            : undefined;
+
+        const target = lastOverride
+            ? splitRepoBranch(lastOverride)[0]
             : program.repository;
 
         const [targetOwner, targetRepo] = target.split('/');
