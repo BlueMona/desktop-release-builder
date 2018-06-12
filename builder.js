@@ -45,7 +45,7 @@ program
     .option('-o --overrides <repolist>', 'Repositories with overrides (comma-separated, release will be published in the last one)', s => s.split(','))
     .option('-n --nosign', 'Do not sign Windows release')
     .option('-k --key [filename]', 'Path to Peerio Updater secret key file')
-    .option('-V --versioning <suffix>', 'Custom versioning scheme ("staging", "nightly", etc.)')
+    .option('-V --versioning [suffix]', 'Versioning based on override tag + 0.0.1 (optional suffix: "staging", "nightly")')
     .parse(process.argv);
 
 if ((!program.shared && !program.nosign) || !program.repository) {
@@ -413,8 +413,10 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
     } else {
         version = semver.inc(latestOverridesVersion, 'patch');
     }
-    // Add extra info/metadata to version
-    version += `-${program.versioning}`;
+    if (typeof program.versioning === 'string') {
+        // Add custom suffix to version
+        version += `-${program.versioning}`;
+    }
 
     // Set this version in package.json in the target dir.
     const packageJSON = path.join(targetDir, 'package.json');
