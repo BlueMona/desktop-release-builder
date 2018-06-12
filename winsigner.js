@@ -130,7 +130,8 @@ function signFile(filepath) {
 function findSignToolBinary() {
     const candidates = [
         "c:\\Program Files (x86)\\Windows Kits\\10\\bin\\x64\\signtool.exe",
-        "c:\\Program Files (x86)\\Windows Kits\\10\\bin\\x86\\signtool.exe"
+        "c:\\Program Files (x86)\\Windows Kits\\10\\bin\\x86\\signtool.exe",
+		"c:\\Program Files (x86)\\Windows Kits\\10\\App Certification Kit\\signtool.exe"
     ];
     for (let i = 0; i < candidates.length; i++) {
         try {
