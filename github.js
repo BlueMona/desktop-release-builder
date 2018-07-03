@@ -114,7 +114,7 @@ async function deleteReleaseAssets(nameRegexp, owner, repo, tag) {
             const file = assets[j];
             if (nameRegexp.test(file.name)) {
                 console.log(`Deleting ${file.name} from release (tag=${tag_name}, id = ${id})`);
-                await github.repos.deleteAsset({ owner, repo, id: file.id });
+                await github.repos.deleteAsset({ owner, repo, asset_id: file.id });
             }
         }
     }
