@@ -2,12 +2,10 @@
 const path = require('path');
 const fs = require('fs');
 const semver = require('semver-extra');
-const GitHubAPI = require('@octokit/rest');
+const Octokit = require('@octokit/rest');
 const download = require('download');
 
-const github = new GitHubAPI({
-    protocol: "https",
-    host: "api.github.com",
+const github = new Octokit({
     headers: {
         "user-agent": "peerio-release-builder"
     },
