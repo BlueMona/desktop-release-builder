@@ -420,15 +420,8 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
 
     // Set this version in package.json in the target dir.
     const packageJSON = path.join(targetDir, 'package.json');
-    const appPackageJSON = path.join(targetDir, 'app', 'package.json');
     // Update package.json
     return readFile(packageJSON)
-        .then(JSON.parse)
-        .then(json => Object.assign(json, { version }))
-        .then(json => JSON.stringify(json, undefined, 2))
-        .then(s => writeFile(packageJSON, s))
-        // Update app/package.json
-        .then(() => readFile(appPackageJSON))
         .then(JSON.parse)
         .then(json => {
             json.version = version;
@@ -436,7 +429,7 @@ async function applyCustomVersioning(overridesRepo, targetDir, originalVersion) 
             return json;
         })
         .then(json => JSON.stringify(json, undefined, 2))
-        .then(s => writeFile(appPackageJSON, s))
+        .then(s => writeFile(packageJSON, s))
         // Return version in vX.Y.Z... format
         .then(() => 'v' + version);
 }
