@@ -61,7 +61,7 @@ function downloadTagArchive(owner, repo, tag, dest) {
  * @param {string} tag git tag
  * @returns Promise<void>
  */
-async function uploadReleaseAsset(filePath, contentType, owner, repo, tag) {
+async function uploadReleaseAsset(filePath, contentType, owner, repo, tag, attempt = 0) {
     // Can't get release by tag name, because draft releases are
     // not assigned to any tag. Thus we fetch one page of releases,
     // hoping that the one we publish is in there, and lookup release id
@@ -69,23 +69,30 @@ async function uploadReleaseAsset(filePath, contentType, owner, repo, tag) {
     const name = path.basename(filePath); // TODO: sanitize for GitHub
     const contentLength = fs.statSync(filePath).size;
 
-    const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
-    for (let i = 0; i < releases.length; i++) {
-        // I think there can be multiple draft releases assigned to
-        // the same tag (until they are published), so we want to
-        // upload this asset to all of them, since we don't know which
-        // one was created by the current run of electron-builder.
-        const { tag_name, upload_url } = releases[i];
-        if (tag_name === tag) {
-            console.log(`Uploading ${name} to release (tag=${tag_name})`);
-            await github.repos.uploadAsset({
-                url: upload_url,
-                file: fs.createReadStream(filePath),
-                contentType,
-                contentLength,
-                name
-            });
+    try {
+        const releases = await github.repos.getReleases({ owner, repo }).then(getAllResults);
+        for (let i = 0; i < releases.length; i++) {
+            // I think there can be multiple draft releases assigned to
+            // the same tag (until they are published), so we want to
+            // upload this asset to all of them, since we don't know which
+            // one was created by the current run of electron-builder.
+            const { tag_name, upload_url } = releases[i];
+            if (tag_name === tag) {
+                console.log(`Uploading ${name} to release (tag ${tag_name}, attempt ${attempt + 1})`);
+                await github.repos.uploadAsset({
+                    url: upload_url,
+                    file: fs.createReadStream(filePath),
+                    contentType,
+                    contentLength,
+                    name
+                });
+            }
         }
+    } catch (err) {
+        if (attempt < 5) {
+            return await uploadReleaseAsset(filePath, contentType, owner, repo, tag, attempt + 1);
+        }
+        throw err;
     }
 }
 
