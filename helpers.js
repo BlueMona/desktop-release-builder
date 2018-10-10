@@ -85,7 +85,7 @@ function makeTempDir() {
  *
  * https://forum.parallels.com/threads/readdirectorychangesw-and-hidden-message-prl_fs-buggy-apps-exceed-buffers.317877/
  *
- * @param path directory path to watch
+ * @param dir directory path to watch
  * @param fireInitially fire callback for each file initially present in the directory
  * @param cb callback (filename: string)
  * @returns function that disposes of the watcher when called

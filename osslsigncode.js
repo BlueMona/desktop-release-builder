@@ -14,6 +14,8 @@ const SHARED_DIR = process.env.SHARED_DIR;
 
 const fs = require('fs');
 const path = require('path');
+const mkdirp = require('mkdirp');
+const { execSync } = require('child_process');
 const { moveFileToDir, criticalError, watchDir } = require('./helpers');
 
 const INPUT_DIR = path.join(SHARED_DIR, 'in');
@@ -39,7 +41,18 @@ for (let i = 0; i < argv.length; i++) {
 
 signWindowsExecutable(IN_FILE)
     .then(signedFile => {
-        fs.renameSync(signedFile, OUT_FILE);
+        mkdirp.sync(path.dirname(OUT_FILE));
+        // XXX: This trickery is here because of disappearing files
+        // from shared folder in Parallels. As soon as you try to
+        // rename 'elevate.exe', it disappears. WTF.
+        // TODO: shell escape
+        execSync(`cp '${signedFile}' '${OUT_FILE}'`);
+        try {
+            execSync(`rm '${signedFile}'`);
+        } catch (err) {
+            // don't care if it succeeds, some bug in Parallels (?) makes file disappear
+            console.log(`rm failed, but so be it`, err);
+        }
         console.log('Done');
     })
     .catch(criticalError);
