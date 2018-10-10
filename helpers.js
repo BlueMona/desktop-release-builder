@@ -102,6 +102,9 @@ function watchDir(dir, fireInitially, cb) {
                 fs.stat(path.join(dir, filename), (err, stats) => {
                     if (err) {
                         // file probably disappeared, ignore it.
+                        if (err.code !== 'ENOENT') {
+                            console.warn('stat error, ignoring:', err);
+                        }
                         fulfill();
                         return;
                     }
@@ -129,7 +132,7 @@ function watchDir(dir, fireInitially, cb) {
                 if (!cancelled) setTimeout(checkForChanges, 1000);
             })
                 .catch(err => {
-                    console.log(`Error watching directory: ${err}`);
+                    console.warn(`Error watching directory: ${err}`);
                 });
         });
     }
