@@ -103,6 +103,7 @@ function watchDir(dir, fireInitially, cb) {
                     if (err) {
                         // file probably disappeared, ignore it.
                         fulfill();
+                        return;
                     }
                     if (stats.isFile()) {
                         // Add file
