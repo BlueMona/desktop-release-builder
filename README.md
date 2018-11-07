@@ -65,7 +65,7 @@ First of all, tag a new release.
 
    `GH_TOKEN` is a GitHub access token (https://github.com/settings/tokens).
 
-   Replace v0.0.0 with the actual tag for the version.
+   Replace v0.0.0 with the actual tag or branch for the version.
    If the tag is not given, fetches the greatest version (according to semver).
 
    `--key` parameter specifies path to
@@ -78,7 +78,8 @@ First of all, tag a new release.
 
    (For testing, instead of `--publish`, you can pass `--destination DIR`,
     in which case the build result won't be published, but will be moved
-    to the specified directory.)
+    to the specified directory. You can also specify platforms to build
+    using `--platforms mac,win,linux` format. )
 
 4. Wait for the project to build, check Windows for
    USB token password input. Enter password.
