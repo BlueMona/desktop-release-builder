@@ -116,10 +116,6 @@ new release. **Release will be published to the repository specified in
 Overrides repository name (`--overrides`) can contain a branch name after '#',
 for example: `PeerioTechnologies/whitelabel#branch`.
 
-To specify version suffix, add `--versioning` argument, for example, to turn
-version `v3.0.0` from `package.json` into `v3.0.0-staging`,
-specify `--versioning staging`.
-
 Overrides repository must contain two items:
 
 * `json-overrides.json` lists overrides that will be merged into the specified
@@ -156,6 +152,36 @@ release will be published there.
 the once in the release starting from the root folder. For example,
 `file-overrides/src/static/img/icon.png` will replace `src/static/img/icon.png` of the original
 project (or add it, if the project doesn't have it.)
+
+
+Versioning
+----------
+
+To specify version suffix, add `--versioning` argument, for example, to turn
+version `v3.0.0` from `package.json` into `v3.0.0-staging`,
+specify `--versioning staging`.
+
+Repositories with overrides have a special versioning scheme when version suffix
+is specified using `--versioning` argument. If original version is greater than
+latest overrides version, use original version, otherwise use overrides version with
+incremented patch number.
+
+Examples:
+
+```
+original : 1.0.0
+overrides: 1.0.0
+--> new : 1.0.1
+
+or
+
+original : 1.2.0
+overrides: 1.0.0
+--> new: 1.2.0
+```
+
+(Release builder fetches release list from the overrides repository and decides
+how to increment patch number based on it.)
 
 
 Releasing mandatory updates
