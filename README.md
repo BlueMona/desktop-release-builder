@@ -111,10 +111,62 @@ Pass `--overrides` option to builder with repository containing overrides:
 
 If `--publish` is passed, the overrides repository will be tagged with the
 new release. **Release will be published to the repository specified in
-`package.json`, so make sure overrides do override it.**
+`package.json`, so make sure it's overridden in `json-overrides`.**
 
 Overrides repository name (`--overrides`) can contain a branch name after '#',
 for example: `PeerioTechnologies/whitelabel#branch`.
+
+To specify version suffix, add `--versioning` argument, for example, to turn
+version `v3.0.0` from `package.json` into `v3.0.0-staging`,
+specify `--versioning staging`.
+
+Overrides repository must contain two items:
+
+* `json-overrides.json` listing overrides that will be merged into the specified
+   files, for example:
+
+```
+"package.json": {
+    "name": "peerio-staging",
+    "productName": "Peerio Staging",
+    "description": "Peerio Staging"
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/PeerioTechnologies/peerio-desktop-staging.git"
+    },
+},
+"some/other/file.json": {
+    "key": "value"
+}
+```
+
+JSON overrides are applied recursively with [lodash.merge](https://lodash.com/docs#merge):
+
+> This method is like _.assign except that it recursively merges own and inherited enumerable
+> string keyed properties of >source objects into the destination object. Source properties
+> that resolve to undefined are skipped if a destination value exists. Array and plain object
+> properties are merged recursively. Other objects and value types are overridden by assignment.
+> Source objects are applied from left to right. Subsequent sources overwrite property assignments
+> of previous sources.
+
+As mentioned above, it's important to override `package.json`'s `repository` so that the
+release will be published there.
+
+* `file-overrides` is a directory containing files that will be added or that will replace
+the once in the release starting from the root folder. For example,
+`file-overrides/src/static/img/icon.png` will replace `src/static/img/icon.png` of the original
+project (or add it, if the project doesn't have it.)
+
+
+Releasing mandatory updates
+---------------------------
+
+In `package.json` the key `lastMandatoryUpdateVersion` specifies the last
+release version that was a mandatory update, that is, if the version the user
+has is less than or equal to it, the updater will consider it "mandatory",
+otherwise the update is "optional" (this is specified in the update manifest).
+To release a new mandatory update, the value of this key should be set to the
+version that is being released.
 
 
 If something goes wrong
