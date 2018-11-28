@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "@octokit/rest": "15.9.4",
-    "@peerio/update-maker": "2.1.0",
+    "@peerio/update-maker": "2.x",
     "commander": "2.19.0",
     "download": "^5.0.3",
     "lodash": "4.17.11",
